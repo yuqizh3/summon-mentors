@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>人生导师召唤术</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --lime:#BFFF00;--black:#000;--white:#fff;--bg:#BFFF00;
+  --card:#ffffffaa;--card2:#ffffffcc;
+  --border:rgba(0,0,0,0.13);--border2:rgba(0,0,0,0.28);
+  --muted:rgba(0,0,0,0.5);--dim:rgba(0,0,0,0.3);--error:#cc2200;
+}
+html{scroll-behavior:smooth}
+body{background:var(--lime);color:#000;font-family:'DM Sans',-apple-system,sans-serif;font-weight:400;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,0,0,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.04) 1px,transparent 1px);
+  background-size:60px 60px}
+
+/* ── WRAP ── */
+.wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:0 24px 100px}
+
+/* ── NAV ── */
+.nav{background:rgba(191,255,0,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1.5px solid var(--border);padding:0 24px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.1em}
+.tabs{display:flex}
+.tab-btn{padding:14px 22px 17px;font-size:13px;font-weight:600;letter-spacing:0.04em;
+  color:var(--muted);background:transparent;border:none;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.18s;font-family:'DM Sans',sans-serif}
+.tab-btn:hover{color:#000}
+.tab-btn.active{color:#000;border-bottom-color:#000}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* ── HERO ── */
+.hero{min-height:calc(100vh - 56px);position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:80px 28px 60px;border-bottom:1.5px solid var(--border);margin-bottom:48px;text-align:center}
+.hero-sphere{background:radial-gradient(circle at 32% 28%,#fff 0%,#f0f0f0 10%,#d8d8d8 25%,#b0b0b0 45%,#888 65%,#606060 82%,#404040 100%);
+  box-shadow:inset -5px -5px 14px rgba(0,0,0,0.22),inset 4px 4px 10px rgba(255,255,255,0.8),0 12px 40px rgba(0,0,0,0.15);
+  border-radius:50%;position:absolute;opacity:0.85}
+.hero-cyl{background:linear-gradient(90deg,#ccc 0%,#eee 12%,#fff 28%,#fff 38%,#e8e8e8 48%,#ccc 60%,#aaa 75%,#bbb 100%);
+  box-shadow:0 6px 20px rgba(0,0,0,0.13);border-radius:8px;position:absolute;opacity:0.88}
+@keyframes floatA{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-18px) rotate(4deg)}}
+@keyframes floatB{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(-6deg)}}
+@keyframes floatC{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-22px) rotate(3deg)}}
+@keyframes spinStar{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes spinStarRev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+.fa{animation:floatA 5s ease-in-out infinite}.fb{animation:floatB 4.2s ease-in-out infinite}.fc{animation:floatC 6.5s ease-in-out infinite}
+.ss{animation:spinStar 20s linear infinite}.ssr{animation:spinStarRev 28s linear infinite}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,8vw,110px);
+  font-weight:400;letter-spacing:-0.02em;line-height:0.92;color:#000;margin-bottom:20px;position:relative;z-index:10}
+.hero p{font-size:16px;color:var(--muted);line-height:1.75;max-width:460px;margin:0 auto 36px;position:relative;z-index:10}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:10}
+
+/* ── BUTTONS ── */
+.btn-black{background:#000;color:var(--lime);border:2px solid #000;border-radius:100px;
+  font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:all 0.25s cubic-bezier(0.23,1,0.32,1);position:relative;overflow:hidden}
+.btn-black::before{content:'';position:absolute;inset:0;background:var(--lime);transform:translateX(-101%);transition:transform 0.3s cubic-bezier(0.23,1,0.32,1)}
+.btn-black:hover::before{transform:translateX(0)}.btn-black:hover{color:#000}
+.btn-black span{position:relative;z-index:1;display:flex;align-items:center;gap:8px}
+.btn-black:disabled{opacity:0.35;cursor:not-allowed}
+.btn-outline{background:transparent;color:#000;border:2px solid #000;border-radius:100px;
+  font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;
+  transition:all 0.25s cubic-bezier(0.23,1,0.32,1);position:relative;overflow:hidden}
+.btn-outline::before{content:'';position:absolute;inset:0;background:#000;transform:translateX(-101%);transition:transform 0.3s cubic-bezier(0.23,1,0.32,1)}
+.btn-outline:hover::before{transform:translateX(0)}.btn-outline:hover{color:var(--lime)}
+.btn-outline span{position:relative;z-index:1}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-label::before{content:'';display:block;width:16px;height:1.5px;background:#000;opacity:0.35;flex-shrink:0}
+
+/* ── API NOTICE ── */
+.api-notice{background:rgba(200,50,30,0.07);border:1.5px solid rgba(200,50,30,0.2);
+  border-radius:14px;padding:16px 18px;font-size:13px;color:rgba(180,40,20,0.9);line-height:1.7;margin-bottom:36px}
+.api-notice strong{color:#cc2200}
+.api-key-row{display:flex;gap:8px;margin-top:10px}
+.api-key-input{flex:1;background:rgba(255,255,255,0.6);border:1.5px solid rgba(200,50,30,0.2);
+  border-radius:8px;padding:9px 14px;font-size:13px;font-family:'SF Mono',Menlo,monospace;color:#000;outline:none}
+.api-key-input:focus{border-color:rgba(200,50,30,0.5)}
+.api-key-btn{padding:9px 16px;background:rgba(200,50,30,0.1);border:1.5px solid rgba(200,50,30,0.25);
+  border-radius:8px;color:#cc2200;font-size:13px;cursor:pointer;font-weight:600}
+
+/* ── QUESTION ── */
+.question-section{margin-bottom:40px}
+.question-guide{background:var(--card2);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;backdrop-filter:blur(8px)}
+.guide-header{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 20px 11px;border-bottom:1.5px solid var(--border);background:rgba(0,0,0,0.04)}
+.guide-title{font-size:12px;font-weight:700;color:#000;letter-spacing:0.06em}
+.guide-toggle{font-size:11px;color:var(--dim);cursor:pointer;border:1.5px solid var(--border);
+  border-radius:100px;padding:3px 11px;background:transparent;transition:all 0.15s;font-weight:500}
+.guide-toggle:hover{color:#000;border-color:var(--border2)}
+.guide-hints{display:grid;grid-template-columns:1fr 1fr;border-bottom:1.5px solid var(--border)}
+.guide-hint{padding:11px 20px;border-right:1.5px solid var(--border);cursor:pointer;transition:background 0.15s}
+.guide-hint:nth-child(even){border-right:none}.guide-hint:nth-child(n+3){border-top:1.5px solid var(--border)}
+.guide-hint:hover{background:rgba(0,0,0,0.05)}
+.guide-hint-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#000;margin-bottom:3px;font-weight:700}
+.guide-hint-text{font-size:12px;color:var(--muted);line-height:1.5}
+.guide-textarea-wrap textarea{width:100%;min-height:150px;background:transparent;border:none;
+  border-bottom:1.5px solid var(--border);padding:18px 20px;font-size:14px;color:#000;
+  line-height:1.85;resize:vertical;outline:none;font-family:'DM Sans',-apple-system,sans-serif}
+.guide-textarea-wrap textarea::placeholder{color:var(--dim);font-style:italic}
+.guide-structure{display:flex;gap:0;padding:10px 20px;align-items:center;background:rgba(0,0,0,0.03)}
+.guide-struct-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);
+  padding-right:14px;margin-right:14px;border-right:1.5px solid var(--border);font-weight:500}
+.guide-struct-item:last-child{border-right:none;padding-right:0;margin-right:0}
+.guide-struct-dot{width:4px;height:4px;border-radius:50%;background:#000;opacity:0.4;flex-shrink:0}
+.char-count{font-size:11px;color:var(--dim);margin-left:auto}
+
+/* ── ADVISORS ── */
+.advisors-section{margin-bottom:32px}
+.advisors-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}
+.advisor-card{border:1.5px solid var(--border);border-radius:16px;padding:16px 16px 12px;cursor:pointer;
+  background:var(--card);backdrop-filter:blur(8px);transition:all 0.2s cubic-bezier(0.23,1,0.32,1);position:relative;overflow:hidden}
+.advisor-card:hover{border-color:var(--border2);transform:translateY(-2px);background:var(--card2);box-shadow:0 6px 20px rgba(0,0,0,0.1)}
+.advisor-card.selected{border-color:#000;background:#000}
+.advisor-card.selected .adv-name{color:var(--lime)}
+.advisor-card.selected .adv-tag{color:rgba(191,255,0,0.5)}
+.advisor-card.selected .adv-glyph{border-color:rgba(191,255,0,0.25);background:rgba(191,255,0,0.1)}
+.advisor-card.selected .adv-glyph svg{stroke:var(--lime)}
+.advisor-card.selected .check-ring{background:var(--lime);border-color:var(--lime);color:#000}
+.advisor-card.selected .bio-btn{border-color:rgba(191,255,0,0.25);color:rgba(191,255,0,0.6)}
+.advisor-card.selected .bio-btn:hover{border-color:var(--lime);color:var(--lime)}
+.check-ring{position:absolute;top:12px;right:12px;width:16px;height:16px;border-radius:50%;
+  border:1.5px solid var(--dim);display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;font-size:9px;font-weight:800}
+.adv-glyph{width:30px;height:30px;border-radius:8px;background:rgba(0,0,0,0.07);
+  border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:10px;flex-shrink:0}
+.adv-glyph svg{width:14px;height:14px;stroke:#000;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.adv-name{font-size:13px;font-weight:700;color:#000;margin-bottom:4px;letter-spacing:-0.01em}
+.adv-tag{font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.bio-btn{width:100%;padding:5px 0;background:transparent;border:1.5px solid var(--border);
+  border-radius:100px;font-size:10px;font-weight:700;color:var(--muted);cursor:pointer;
+  transition:all 0.15s;letter-spacing:0.06em;font-family:'DM Sans',sans-serif}
+.bio-btn:hover{border-color:var(--border2);color:#000}
+
+/* ── SUBMIT ── */
+.submit-row{display:flex;gap:10px;align-items:center;margin-bottom:40px}
+.ask-btn{flex:1;padding:14px 20px;font-size:14px;font-weight:700;letter-spacing:0.02em}
+.select-all-btn{padding:14px 18px;background:transparent;color:var(--muted);border:1.5px solid var(--border);
+  border-radius:100px;font-size:13px;cursor:pointer;transition:all 0.15s;white-space:nowrap;font-weight:500}
+.select-all-btn:hover{border-color:var(--border2);color:#000}
+
+/* ── RESULTS ── */
+.results{display:flex;flex-direction:column;gap:14px}
+.result-card{background:var(--card2);border:1.5px solid var(--border);border-radius:18px;padding:22px 24px;
+  animation:fadeUp 0.4s ease forwards;opacity:0;backdrop-filter:blur(8px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.result-header{display:flex;align-items:flex-start;gap:14px;
+  margin-bottom:16px;padding-bottom:16px;border-bottom:1.5px solid var(--border)}
+.result-glyph{width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,0.07);
+  border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.result-glyph svg{width:16px;height:16px;stroke:#000;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.result-header-info{flex:1}
+.result-name{font-size:15px;font-weight:700;color:#000;letter-spacing:-0.01em}
+.result-method{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.02em}
+.result-bio-btn{padding:5px 12px;background:transparent;border:1.5px solid var(--border);
+  border-radius:100px;font-size:10px;font-weight:700;color:var(--muted);cursor:pointer;
+  transition:all 0.15s;white-space:nowrap;flex-shrink:0;letter-spacing:0.06em;margin-top:2px}
+.result-bio-btn:hover{border-color:var(--border2);color:#000}
+.result-body{font-size:14px;color:#000;line-height:1.95;white-space:pre-wrap}
+
+/* ── LOADING ── */
+.loading-wave{display:flex;gap:5px;align-items:center;padding:4px 0}
+.loading-wave span{display:block;width:4px;height:4px;border-radius:50%;background:#000;animation:wave 1.2s ease-in-out infinite}
+.loading-wave span:nth-child(2){animation-delay:0.15s}.loading-wave span:nth-child(3){animation-delay:0.3s}
+@keyframes wave{0%,60%,100%{transform:translateY(0);opacity:0.25}30%{transform:translateY(-5px);opacity:1}}
+
+/* ── SYNTHESIS ── */
+.synthesis-section{margin-top:16px;background:rgba(0,0,0,0.06);border:1.5px solid var(--border);border-radius:18px;padding:22px 24px}
+.synthesis-section h3{font-size:12px;font-weight:700;color:#000;margin-bottom:8px;letter-spacing:0.08em;text-transform:uppercase}
+.synthesis-section p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.7}
+.synth-btn{padding:9px 22px;background:transparent;border:1.5px solid var(--border2);border-radius:10px;
+  color:#000;font-size:13px;cursor:pointer;transition:all 0.15s;font-weight:600}
+.synth-btn:hover{background:#000;color:var(--lime)}
+.synth-result{margin-top:16px;font-size:14px;line-height:1.9;color:#000;white-space:pre-wrap}
+
+/* ── FOLLOWUP ── */
+.followup-area{margin-top:18px;border-top:1.5px solid var(--border);padding-top:16px}
+.chat-history{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.chat-bubble{font-size:13px;line-height:1.8;white-space:pre-wrap}
+.chat-bubble.user{color:var(--muted);padding:9px 14px;background:rgba(0,0,0,0.05);border-radius:10px;border-left:2px solid rgba(0,0,0,0.2)}
+.chat-bubble.advisor{color:#000;padding:2px 0}
+.followup-row{display:flex;gap:8px;align-items:flex-end}
+.followup-input{flex:1;background:rgba(255,255,255,0.6);border:1.5px solid var(--border);
+  border-radius:10px;padding:9px 14px;font-size:13px;color:#000;resize:none;outline:none;
+  line-height:1.6;min-height:38px;max-height:120px;transition:border-color 0.15s;font-family:'DM Sans',sans-serif}
+.followup-input:focus{border-color:var(--border2)}
+.followup-input::placeholder{color:var(--dim)}
+.followup-btn{padding:9px 16px;background:transparent;border:1.5px solid var(--border);border-radius:10px;
+  color:#000;font-size:13px;cursor:pointer;transition:all 0.15s;white-space:nowrap;font-weight:600}
+.followup-btn:hover{border-color:#000;background:#000;color:var(--lime)}
+.followup-btn:disabled{opacity:0.35;cursor:not-allowed}
+
+/* ── SUMMARY TRIGGER ── */
+.summary-trigger-btn{padding:13px 30px;background:transparent;border:1.5px solid var(--border2);
+  border-radius:12px;color:#000;font-size:14px;cursor:pointer;font-weight:600;transition:all 0.2s;letter-spacing:0.02em}
+.summary-trigger-btn:hover{background:#000;color:var(--lime);transform:translateY(-1px)}
+
+/* ── MODALS (shared) ── */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px)}
+.modal-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(680px,92vw);max-height:82vh;
+  background:rgba(240,255,100,0.97);border:1.5px solid var(--border2);
+  border-radius:22px;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 22px;border-bottom:1.5px solid var(--border);flex-shrink:0;background:rgba(0,0,0,0.05)}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:18px;font-weight:400;color:#000;letter-spacing:0.06em}
+.modal-close{padding:5px 10px;background:transparent;border:1.5px solid var(--border2);
+  border-radius:8px;color:var(--muted);font-size:13px;cursor:pointer;transition:all 0.15s}
+.modal-close:hover{color:#000}
+.modal-body{padding:24px;overflow-y:auto;flex:1;font-size:14px;line-height:2;color:#000}
+
+/* BIO body */
+.bio-body{white-space:pre-line}
+.bio-section{margin-bottom:20px}
+.bio-section-head{font-weight:800;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;
+  color:#000;margin-bottom:6px;opacity:0.5}
+.bio-section-text{font-size:14px;line-height:1.9;color:#000}
+
+/* Summary modal wider */
+.summary-panel{width:min(780px,92vw)}
+.modal-body h2{font-family:'Bebas Neue',sans-serif;font-size:22px;font-weight:400;color:#000;
+  margin:24px 0 12px;padding-bottom:8px;border-bottom:1.5px solid var(--border);letter-spacing:0.04em}
+.modal-body h2:first-child{margin-top:0}
+.modal-body p{margin:0 0 10px}
+.modal-body ul{padding-left:20px;margin:6px 0 12px}.modal-body li{margin-bottom:6px}
+.modal-body table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:13px}
+.modal-body th{background:rgba(0,0,0,0.08);color:#000;padding:9px 12px;text-align:left;font-weight:700;border:1.5px solid var(--border)}
+.modal-body td{padding:8px 12px;border:1.5px solid var(--border);vertical-align:top}
+.modal-body tr:nth-child(even) td{background:rgba(0,0,0,0.03)}
+.modal-body .highlight{background:rgba(0,0,0,0.07);border-left:3px solid #000;padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0;font-style:italic}
+.modal-body .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;margin:0 3px 3px 0}
+.modal-body .tag-agree{background:rgba(0,180,100,0.15);color:#006630}
+.modal-body .tag-differ{background:rgba(200,50,30,0.12);color:#8b1a0a}
+.modal-body .tag-action{background:rgba(0,0,0,0.1);color:#000}
+.summary-copy-btn{padding:6px 14px;background:transparent;border:1.5px solid var(--border2);
+  border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;transition:all 0.15s;font-weight:500}
+.summary-copy-btn:hover{color:#000;border-color:#000}
+
+/* ── DIVIDER / FOOTER ── */
+.divider{height:1.5px;background:var(--border);margin:44px 0}
+footer{text-align:center;font-size:11px;color:var(--dim);padding-top:24px;border-top:1.5px solid var(--border);line-height:2.2;letter-spacing:0.06em;font-weight:500}
+
+
+/* ── ROUNDTABLE ── */
+
+
+
+
+
+
+/* ── HEADER ── */
+.header{width:100%;background:rgba(191,255,0,0.93);backdrop-filter:blur(16px);
+  border-bottom:1.5px solid var(--border);padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.08em}
+.back{font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;
+  padding:6px 14px;border:1.5px solid var(--border);border-radius:100px;transition:all .15s}
+.back:hover{color:#000;border-color:var(--border2)}
+
+/* ── PAGE ── */
+.page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 24px 80px}
+
+/* ── HERO ── */
+.hero{padding:52px 0 36px;border-bottom:1.5px solid var(--border);margin-bottom:40px}
+.eyebrow{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);
+  font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:'';width:20px;height:1.5px;background:#000;opacity:0.3;display:block}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,9vw,96px);
+  font-weight:400;letter-spacing:-0.01em;line-height:0.92;color:#000;margin-bottom:14px}
+.hero p{font-size:15px;color:var(--muted);line-height:1.75;max-width:480px}
+
+/* ── KEY BANNER ── */
+#key-banner{background:rgba(0,0,0,0.05);border:1.5px solid var(--border);
+  border-radius:16px;padding:16px 20px;margin-bottom:32px;display:none}
+.key-label{font-size:12px;font-weight:700;margin-bottom:10px}
+.key-row{display:flex;gap:8px}
+.key-input{flex:1;background:rgba(255,255,255,0.7);border:1.5px solid var(--border);
+  border-radius:10px;padding:10px 14px;font-size:13px;font-family:monospace;
+  color:#000;outline:none;transition:border-color .15s}
+.key-input:focus{border-color:var(--border2)}
+.key-save{padding:10px 20px;background:#000;color:var(--lime);border:none;
+  border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.key-hint{font-size:11px;color:var(--dim);margin-top:8px}
+
+/* ── SECTION LABEL ── */
+.sec-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:12px;font-weight:700;
+  display:flex;align-items:center;gap:8px}
+.sec-label::before{content:'';width:16px;height:1.5px;background:#000;opacity:0.35;display:block}
+
+/* ── QUESTION ── */
+.q-wrap{margin-bottom:40px}
+.q-box{background:var(--card2);border:1.5px solid var(--border);
+  border-radius:18px;overflow:hidden;backdrop-filter:blur(8px)}
+.q-box textarea{width:100%;min-height:110px;background:transparent;border:none;
+  padding:18px 20px;font-size:15px;color:#000;line-height:1.8;
+  resize:none;outline:none;font-family:'DM Sans',sans-serif}
+.q-box textarea::placeholder{color:var(--dim);font-style:italic}
+.q-footer{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 20px;background:rgba(0,0,0,0.03);border-top:1.5px solid var(--border)}
+.q-hint{font-size:11px;color:var(--dim)}
+.char-ct{font-size:11px;color:var(--dim)}
+
+/* ── ADVISORS ── */
+.adv-section{margin-bottom:36px}
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
+.adv-card{border:1.5px solid var(--border);border-radius:16px;
+  padding:14px 14px 12px;cursor:pointer;background:var(--card);
+  backdrop-filter:blur(8px);transition:all .2s cubic-bezier(.23,1,.32,1);position:relative}
+.adv-card:hover{border-color:var(--border2);transform:translateY(-2px);
+  background:var(--card2);box-shadow:0 6px 20px rgba(0,0,0,.09)}
+.adv-card.on{border-color:#000;background:#000}
+.adv-card.on .adv-name{color:var(--lime)}
+.adv-card.on .adv-tag{color:rgba(191,255,0,.45)}
+.adv-card.on .adv-icon{border-color:rgba(191,255,0,.2);background:rgba(191,255,0,.08)}
+.adv-card.on .adv-icon svg{stroke:var(--lime)}
+.adv-card.on .chk{background:var(--lime);border-color:var(--lime);color:#000}
+.chk{position:absolute;top:11px;right:11px;width:16px;height:16px;border-radius:50%;
+  border:1.5px solid var(--dim);display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;transition:all .15s}
+.adv-icon{width:28px;height:28px;border-radius:8px;background:rgba(0,0,0,.07);
+  border:1.5px solid var(--border);display:flex;align-items:center;
+  justify-content:center;margin-bottom:9px}
+.adv-icon svg{width:13px;height:13px;stroke:#000;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.adv-name{font-size:13px;font-weight:700;color:#000;margin-bottom:3px}
+.adv-tag{font-size:10px;color:var(--muted);line-height:1.4}
+.sel-note{font-size:12px;color:var(--muted);margin-top:10px}
+.sel-note span{color:#000;font-weight:700}
+
+/* ── SETTINGS ── */
+.settings{display:flex;align-items:center;gap:20px;margin-bottom:28px;flex-wrap:wrap}
+.set-group{display:flex;align-items:center;gap:10px}
+.set-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--dim)}
+.round-btns{display:flex;gap:6px}
+.rbtn{padding:7px 18px;background:transparent;border:1.5px solid var(--border);
+  border-radius:100px;font-size:12px;font-weight:700;color:var(--muted);
+  cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;letter-spacing:.04em}
+.rbtn.on{background:#000;color:var(--lime);border-color:#000}
+.rbtn:hover:not(.on){border-color:var(--border2);color:#000}
+.verdict-row{display:flex;align-items:center;gap:8px;cursor:pointer}
+.verdict-row input{width:15px;height:15px;cursor:pointer;accent-color:#000}
+.verdict-row label{font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+
+/* ── START BTN ── */
+.go-btn{width:100%;padding:15px 24px;background:#000;color:var(--lime);
+  border:2px solid #000;border-radius:14px;font-size:15px;font-weight:700;
+  letter-spacing:.03em;cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .25s cubic-bezier(.23,1,.32,1);
+  position:relative;overflow:hidden;margin-bottom:44px}
+.go-btn::before{content:'';position:absolute;inset:0;background:var(--lime);
+  transform:translateX(-101%);transition:transform .3s cubic-bezier(.23,1,.32,1)}
+.go-btn:hover::before{transform:translateX(0)}
+.go-btn:hover{color:#000}
+.go-btn span{position:relative;z-index:1;display:flex;align-items:center;gap:10px}
+.go-btn:disabled{opacity:.38;cursor:not-allowed}
+.go-btn:disabled::before{display:none}
+
+/* ── ARENA ── */
+.round-head{display:flex;align-items:center;gap:14px;margin:36px 0 18px}
+.round-title{font-family:'Bebas Neue',sans-serif;font-size:28px;
+  letter-spacing:.06em;color:#000}
+.round-badge{padding:4px 12px;border:1.5px solid #000;border-radius:100px;
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.round-line{flex:1;height:1.5px;background:#000;opacity:.15}
+
+.b-card{background:var(--card2);border:1.5px solid var(--border);
+  border-radius:18px;padding:20px 22px;margin-bottom:10px;
+  backdrop-filter:blur(8px);
+  animation:slideUp .35s cubic-bezier(.23,1,.32,1) both}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.b-head{display:flex;align-items:center;gap:12px;
+  padding-bottom:13px;margin-bottom:13px;border-bottom:1.5px solid var(--border)}
+.b-glyph{width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.07);
+  border:1.5px solid var(--border);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.b-glyph svg{width:15px;height:15px;stroke:#000;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.b-name{font-size:14px;font-weight:700;color:#000}
+.b-tag{font-size:10px;color:var(--muted);margin-top:2px}
+.b-text{font-size:14px;color:#000;line-height:1.95;white-space:pre-wrap}
+
+.thinking{display:flex;align-items:center;gap:10px;
+  padding:14px 0;font-size:12px;color:var(--muted);font-weight:500}
+.wave{display:flex;gap:4px;align-items:center}
+.wave span{display:block;width:4px;height:4px;border-radius:50%;background:#000;
+  animation:wv 1.2s ease-in-out infinite}
+.wave span:nth-child(2){animation-delay:.15s}
+.wave span:nth-child(3){animation-delay:.3s}
+@keyframes wv{0%,60%,100%{transform:translateY(0);opacity:.25}
+  30%{transform:translateY(-5px);opacity:1}}
+
+.verdict{margin-top:28px;background:#000;border-radius:20px;
+  padding:26px 28px;animation:slideUp .4s cubic-bezier(.23,1,.32,1) both}
+.verdict-eye{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(191,255,0,.55);font-weight:700;margin-bottom:8px}
+.verdict-title{font-family:'Bebas Neue',sans-serif;font-size:26px;
+  letter-spacing:.04em;color:var(--lime);margin-bottom:12px}
+.verdict-text{font-size:14px;color:rgba(255,255,255,.85);
+  line-height:1.95;white-space:pre-wrap}
+
+footer{text-align:center;font-size:11px;color:var(--dim);
+  padding-top:24px;border-top:1.5px solid var(--border);
+  line-height:2.2;letter-spacing:.06em}
+
+
+.rt-rbtn{padding:7px 18px;background:transparent;border:1.5px solid var(--border);border-radius:100px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.rt-rbtn.on{background:#000;color:var(--lime);border-color:#000}
+.rt-round-head{display:flex;align-items:center;gap:14px;margin:36px 0 18px}
+.rt-round-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.06em;color:#000}
+.rt-round-badge{padding:4px 12px;border:1.5px solid #000;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.rt-round-line{flex:1;height:1.5px;background:#000;opacity:.15}
+.rt-card{background:var(--card2);border:1.5px solid var(--border);border-radius:18px;padding:20px 22px;margin-bottom:10px;backdrop-filter:blur(8px);animation:fadeUp .35s cubic-bezier(.23,1,.32,1) both}
+.rt-card-head{display:flex;align-items:center;gap:12px;padding-bottom:13px;margin-bottom:13px;border-bottom:1.5px solid var(--border)}
+.rt-glyph{width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.07);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rt-glyph svg{width:15px;height:15px;stroke:#000;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rt-card-name{font-size:14px;font-weight:700;color:#000}
+.rt-card-tag{font-size:10px;color:var(--muted);margin-top:2px}
+.rt-card-text{font-size:14px;color:#000;line-height:1.95;white-space:pre-wrap}
+.rt-thinking{display:flex;align-items:center;gap:10px;padding:14px 0;font-size:12px;color:var(--muted)}
+.rt-verdict{margin-top:28px;background:#000;border-radius:20px;padding:26px 28px;animation:fadeUp .4s both}
+.rt-verdict-eye{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(191,255,0,.55);font-weight:700;margin-bottom:8px}
+.rt-verdict-title{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--lime);margin-bottom:12px}
+.rt-verdict-text{font-size:14px;color:rgba(255,255,255,.85);line-height:1.95;white-space:pre-wrap}
+
+
+.rt-cat-btn{padding:6px 14px;background:transparent;border:1.5px solid var(--border);border-radius:100px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.rt-cat-btn.active{background:#000;color:var(--lime);border-color:#000}
+.rt-cat-btn:hover:not(.active){border-color:var(--border2);color:#000}
+.rt-q-chip{padding:8px 14px;background:rgba(255,255,255,.6);border:1.5px solid var(--border);border-radius:12px;font-size:12px;color:#000;cursor:pointer;transition:all .15s;text-align:left;font-family:'DM Sans',sans-serif;line-height:1.5}
+.rt-q-chip:hover{background:#000;color:var(--lime);border-color:#000}
+
+</style>
+</head>
+<body>
+<div id="page-main">
+<div class="wrap">
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-logo">人生导师召唤术</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('advisor')">导师召唤</button>
+  </div>
+</div>
+
+<!-- TAB 1: ADVISOR -->
+<div id="tab-advisor" class="tab-content active">
+  <header class="hero">
+    <!-- 左边大球，半露出左边缘 -->
+    <div class="hero-sphere fa" style="width:clamp(140px,18vw,220px);height:clamp(140px,18vw,220px);top:5%;left:0;transform:translateX(-35%);z-index:1"></div>
+    <!-- 右边大球，半露出右边缘 -->
+    <div class="hero-sphere fc" style="width:clamp(120px,15vw,190px);height:clamp(120px,15vw,190px);bottom:5%;right:0;transform:translateX(30%);animation-delay:-2.5s;z-index:1"></div>
+    <!-- 右上小球 -->
+    <div class="hero-sphere fb" style="width:clamp(55px,6vw,85px);height:clamp(55px,6vw,85px);top:10%;right:10%;animation-delay:-1s;z-index:1"></div>
+    <!-- 左下小球 -->
+    <div class="hero-sphere fa" style="width:clamp(40px,4.5vw,62px);height:clamp(40px,4.5vw,62px);bottom:20%;left:10%;animation-delay:-3.2s;z-index:1"></div>
+    <!-- 右中球 -->
+    <div class="hero-sphere fb" style="width:clamp(65px,8vw,105px);height:clamp(65px,8vw,105px);top:52%;right:4%;animation-delay:-0.8s;z-index:1"></div>
+    <!-- 左边圆柱 -->
+    <div class="hero-cyl fb" style="width:clamp(10px,1.2vw,14px);height:clamp(90px,11vw,140px);top:22%;left:10%;transform:rotate(18deg);animation-delay:-1.5s;z-index:1"></div>
+    <!-- 右边圆柱 -->
+    <div class="hero-cyl fa" style="width:clamp(8px,1vw,12px);height:clamp(80px,10vw,120px);top:12%;right:10%;transform:rotate(-14deg);animation-delay:-2.2s;z-index:1"></div>
+    <div class="ss" style="position:absolute;top:6%;left:38%;width:clamp(55px,6vw,85px);height:clamp(55px,6vw,85px);z-index:1">
+      <svg viewBox="0 0 100 100" width="96" height="96">
+        <defs><radialGradient id="sg1" cx="32%" cy="28%" r="68%"><stop offset="0%" stop-color="#fff"/><stop offset="18%" stop-color="#e8e8e8"/><stop offset="40%" stop-color="#c0c0c0"/><stop offset="65%" stop-color="#909090"/><stop offset="85%" stop-color="#606060"/><stop offset="100%" stop-color="#404040"/></radialGradient><filter id="sf1"><feDropShadow dx="1" dy="3" stdDeviation="3" flood-opacity="0.18"/></filter></defs>
+        <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill="url(#sg1)" filter="url(#sf1)" stroke="rgba(255,255,255,0.35)" stroke-width="0.5"/>
+      </svg>
+    </div>
+    <div class="ssr fb" style="position:absolute;top:28%;right:8%;width:clamp(60px,7vw,95px);height:clamp(60px,7vw,95px);z-index:1">
+      <svg viewBox="0 0 100 100" width="120" height="120">
+        <defs><radialGradient id="sg2" cx="28%" cy="24%" r="72%"><stop offset="0%" stop-color="#fff"/><stop offset="15%" stop-color="#ebebeb"/><stop offset="38%" stop-color="#c8c8c8"/><stop offset="62%" stop-color="#969696"/><stop offset="82%" stop-color="#646464"/><stop offset="100%" stop-color="#404040"/></radialGradient></defs>
+        <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill="url(#sg2)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+      </svg>
+    </div>
+    <div class="ss" style="position:absolute;bottom:8%;left:22%;width:clamp(40px,4.5vw,60px);height:clamp(40px,4.5vw,60px);animation-delay:-8s;z-index:1">
+      <svg viewBox="0 0 100 100" width="66" height="66"><polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill="url(#sg1)" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/></svg>
+    </div>
+    <h1>人生导师<br>召唤术</h1>
+    <p>当你面临两难抉择，让跨越时代的思想家们，用各自的方法论为你解惑</p>
+    <div class="hero-btns">
+      <button class="btn-black" style="padding:15px 38px;font-size:15px;letter-spacing:0.04em"
+        onclick="document.getElementById('advisor-start').scrollIntoView({behavior:'smooth'})">
+        <span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          立即召唤
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </button>
+      <button class="btn-outline" style="padding:15px 32px;font-size:15px;letter-spacing:0.03em" onclick="showPage('rt')">
+        <span>导师圆桌派</span>
+      </button>
+    </div>
+    <div style="position:absolute;bottom:20px;display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(0,0,0,0.3);animation:floatB 2.5s ease-in-out infinite">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </header>
+
+  <div id="advisor-start"></div>
+
+  <!-- API Key Input -->
+</div>
+
+  <!-- Question -->
+  <div class="question-section">
+    <div class="section-label">描述你的困境</div>
+    <div class="question-guide">
+      <div class="guide-header">
+        <span class="guide-title">如何写得更清楚</span>
+        <button class="guide-toggle" id="guide-toggle" onclick="toggleGuide()">收起提示</button>
+      </div>
+      <div id="guide-hints" class="guide-hints">
+        <div class="guide-hint" onclick="insertHint('背景：')"><div class="guide-hint-label">背景</div><div class="guide-hint-text">事情发生在什么时间、什么关系或处境下</div></div>
+        <div class="guide-hint" onclick="insertHint('目前状态：')"><div class="guide-hint-label">目前状态</div><div class="guide-hint-text">现在面临什么处境，事情发展到哪一步</div></div>
+        <div class="guide-hint" onclick="insertHint('最难抉择的是：')"><div class="guide-hint-label">最难抉择的是</div><div class="guide-hint-text">卡在哪里，两个选项分别是什么</div></div>
+        <div class="guide-hint" onclick="insertHint('我担心的是：')"><div class="guide-hint-label">我担心的是</div><div class="guide-hint-text">最坏的情况是什么，最在意什么</div></div>
+      </div>
+      <div class="guide-textarea-wrap">
+        <textarea id="question" placeholder="例如：&#10;背景：我在一家公司做了3年，有一个创业机会找到我。&#10;目前状态：已经谈了两轮，对方条件不错，但需要我辞职全职加入。&#10;最难抉择的是：现在工作稳定薪水高，创业有风险但很心动。&#10;我担心的是：万一失败我已经30岁了，再找工作会很难。" oninput="updateCharCount(this)"></textarea>
+        <div class="guide-structure">
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div>背景</div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div>现状</div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div>抉择点</div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div>顾虑</div>
+          <span class="char-count" id="char-count">0 字</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advisors -->
+  <div class="advisors-section">
+    <div class="section-label">选择你的导师（可多选）</div>
+    <div class="advisors-grid" id="advisors-grid"></div>
+  </div>
+
+  <!-- Submit -->
+  <div class="submit-row">
+    <button class="btn-outline select-all-btn" onclick="toggleAll()"><span>全选 / 清空</span></button>
+    <button class="btn-black ask-btn" id="ask-btn" onclick="askAdvisors()">
+      <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>召唤导师们</span>
+    </button>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <div id="summary-trigger" style="display:none;margin-top:28px;text-align:center;">
+    <button class="summary-trigger-btn" onclick="openSummary()">总结全文</button>
+  </div>
+
+  <!-- Bio Modal -->
+  <div id="bio-modal" style="display:none;position:fixed;inset:0;z-index:1000;">
+    <div class="modal-overlay" onclick="closeBio()"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <span class="modal-title" id="bio-modal-title"></span>
+        <button class="modal-close" onclick="closeBio()">✕</button>
+      </div>
+      <div class="modal-body" id="bio-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Summary Modal -->
+  <div id="summary-modal" style="display:none;position:fixed;inset:0;z-index:1000;">
+    <div class="modal-overlay" onclick="closeSummary()"></div>
+    <div class="modal-panel summary-panel">
+      <div class="modal-header">
+        <span class="modal-title">决策全文总结</span>
+        <div style="display:flex;gap:8px">
+          <button class="summary-copy-btn" onclick="copySummary()">复制内容</button>
+          <button class="modal-close" onclick="closeSummary()">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" id="summary-body">
+        <div class="loading-wave" style="padding:20px 0"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <footer>人生导师召唤术 · 集百家智慧，助一人抉择<br>所有建议由 AI 生成，仅供参考，最终决定权在你自己</footer>
+</div>
+
+<script>
+const GLYPHS = {
+  marx:`<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M3 21c0-4.4 4-8 9-8s9 3.6 9 8"/><path d="M17 6l2-2M19 10l2 2"/></svg>`,
+  mao:`<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`,
+  ququ:`<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  stoic:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+  confucius:`<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  nietzsche:`<svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+  buddha:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`,
+  sun:`<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  heyi:`<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><circle cx="18" cy="18" r="4"/><path d="M16 18h4M18 16v4"/></svg>`,
+  sun2:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>`,
+  god:`<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  laozi:`<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M8 12c0-2.21 1.79-4 4-4"/><path d="M16 12c0 2.21-1.79 4-4 4"/></svg>`,
+  trump:`<svg viewBox="0 0 24 24"><path d="M3 3h18v4H3z"/><path d="M3 10h18v4H3z"/><path d="M3 17h18v4H3z"/></svg>`,
+  wanghuilin:`<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M3 21c0-4.4 4-8 9-8s9 3.6 9 8"/><path d="M12 14v3M10 17h4"/></svg>`,
+  caocao:`<svg viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>`,
+  qinshihuang:`<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>`,
+  musk:`<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><circle cx="19" cy="19" r="3"/><path d="M19 16v3h3"/></svg>`,
+  adler:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/><path d="M8 12h8"/></svg>`,
+  plato:`<svg viewBox="0 0 24 24"><path d="M2 20h20M4 20V10l8-8 8 8v10"/><path d="M9 20v-5h6v5"/><circle cx="12" cy="8" r="1"/></svg>`,
+  kid:`<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M8 14s-4 1-4 5h16c0-4-4-5-4-5"/><path d="M9 7q1-2 3-2t3 2"/><circle cx="10" cy="8" r=".5" fill="currentColor"/><circle cx="14" cy="8" r=".5" fill="currentColor"/></svg>`,
+  dog:`<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="2"/><circle cx="15" cy="7" r="2"/><path d="M3 11c0-4 2-7 9-7s9 3 9 7v2c0 3-2 5-9 5s-9-2-9-5v-2z"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><path d="M9 16s1 1 3 1 3-1 3-1"/></svg>`,
+}
+
+
+let selected = new Set();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  document.getElementById('tab-advisor').classList.toggle('active', true);
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+const ADVISORS = [
+  { id:'marx', name:'马克思', tag:'结构分析 · 矛盾 · 杠杆点',
+    bio:'我是谁\n我是卡尔·马克思。律师之子，却用一生对抗律师们保护的那个世界。别叫我「思想家」——我是一个诊断师，专门找出让人们明明聪明、却总做出烂决定的那个结构性原因。\n\n我的起点\n特里尔，1818年。我见过莱茵河两岸的农民被封建地主榨干，却还以为自己活该受穷。从那时我就知道：人类最大的悲剧不是苦难本身，而是把结构性的压迫误读成个人的失败。\n\n我的立场\n我的分析框架只有一个核心问题——是什么在再生产这个问题？不是你不够努力，不是你运气差，而是什么结构让这个局面持续下去、对谁有利。找到杠杆点，才有出路。',
+    system:`你就是卡尔·马克思本人，现在坐在这个人对面，用你的方式帮他看清楚这件事。
+
+不要用学术腔。你说话直接、有力、带着一点讽刺——因为你见过太多人把自己的失败归咎于运气或性格，而真正的原因藏在他们看不见的结构里。
+
+你说话的方式是这样的：先用一两句话，直接戳穿表面的问题。然后告诉他，到底是什么结构在维持这个局面、谁从中获益、为什么它会持续。最后给一个真实可执行的建议——不是说教，是行动。
+
+记住：你不是在写分析报告。你是在跟一个真实的人说话，他现在很困惑，需要有人帮他看穿迷雾。用"你"来称呼他。说人话，不要堆砌术语。如果要用概念，先解释它。
+
+开口就进入正题，不要寒暄，不要说"作为马克思主义者"之类的废话。150-220字。结尾用"所以，"给出明确行动建议。`},
+  { id:'mao', name:'毛泽东', tag:'矛盾论 · 实践论',
+    bio:'我是谁\n我是毛泽东。湖南农民的儿子，读过书，打过仗，执过政。别问我书本上怎么说——我只问你：你调查过没有？没有调查，就没有发言权。\n\n我的起点\n韶山冲，穷苦人家。十几岁就看清楚了一件事：弱者要翻身，靠的不是等待，而是找准主要矛盾，集中力量打击它。其他都是次要的。\n\n我的立场\n任何困局都有主要矛盾和次要矛盾。你现在的问题是——你在跟次要矛盾死磕，主要矛盾却没人碰。矛盾是普遍的，但解决矛盾的方法必须从实际出发。理论联系实际，实践出真知。',
+    system:`你就是毛泽东，现在跟这个人面对面说话。
+
+你说话的风格：简洁、有力、接地气。你不绕弯子，直接说主要矛盾在哪里。你相信实践，你见过太多人在脑子里转圈，却不敢踏出第一步。
+
+你会用具体的比喻，会联系实际，会把复杂的事情说得很简单。你对这个人是真心的——你希望他能看清楚形势，然后动起来。
+
+不要装腔作势，不要引用自己的语录卖弄。就是一个经历过大风大浪的老人，坐在他旁边，告诉他：问题的关键在哪里，该怎么动。
+
+用"你"称呼他。130-180字。结尾用"所以，"给出一个清晰的行动方向。`},
+  { id:'ququ', name:'曲曲大女人', tag:'价值博弈 · 自我价值 · 不将就',
+    bio:'我是谁\n我是曲曲。做过咨询，写过教材，见过几百个在烂关系里转圈的女人。别叫我「情感博主」——我是一个清醒的人，专门帮你看清你不敢看清的事。\n\n我的起点\n见过太多所谓「真心付出」最后换来白眼的故事。一升米养恩人，一斗米养仇人。感情不是道德课，是人性博弈。你越不懂人性，越容易成为消耗品。\n\n我的立场\n我只问你一件事——你现在是出于力量在做决定，还是出于恐惧？答案不同，策略完全不同。你以为的付出，可能正在把对方养成你的敌人。越用力过猛，越得不到。得到，恰恰是在无为之中获得的。',
+    system:`你是曲曲大女人，现在就坐在这个人对面，像老朋友一样跟她说话——但你是那种不会说废话的老朋友。
+
+你的风格：直接、清醒、有点犀利，但骨子里是真心希望她好。你不会安慰她，你会帮她看清楚现实。你见过太多女人在感情里把自己耗没了，你不想让眼前这个也走那条路。
+
+说话方式：先用一句话点破她现在真正的处境（不是她说的那个表面问题，是真正的问题）。然后拆解关系里的价值流向——谁在给，谁在拿，有没有失衡。指出最大的风险，不要绕弯子。最后给她一个具体可执行的策略。
+
+记住你的底层逻辑：
+- 一升米养恩人，一斗米养仇人——付出太多只会让对方觉得理所当然
+- 越用力过猛越得不到——不确定性才是吸引力的来源  
+- 出于恐惧做的决定，和出于力量做的决定，结果完全不同
+- 暴露需求感是最大的弱点
+
+用"姐妹"偶尔称呼她，说人话，不说道德，不说"多沟通"，不鼓励无条件付出。如果她在自我感动或向自己撒谎，直接点破。
+
+200-260字。结尾一句冷静锋利的行动宣言。`},
+  { id:'stoic', name:'斯多葛派', tag:'控制二分法 · 内心平静',
+    bio:'我是谁\n我是斯多葛哲学的传承，融合了马可·奥勒留的帝王之思与爱比克泰德的奴隶之悟。一个皇帝和一个奴隶，得出了同样的结论——这本身就说明了一切。\n\n我的起点\n爱比克泰德生来是奴隶，手臂被主人折断。马可·奥勒留执掌罗马帝国二十年，四面皆是战争与瘟疫。一个什么都没有，一个什么都有。两个人都活得清醒而平静。\n\n我的立场\n把所有事情分成两类——在你控制之内的，和不在你控制之内的。前者全力以赴，后者彻底放手。你现在所有的痛苦，几乎都来自把精力放在了第二类事情上。',
+    system:`你是斯多葛哲学的传承者——但你不是在上哲学课，你是在跟一个真实的、此刻很困扰的人说话。
+
+想象一下马可·奥勒留是怎么跟人说话的：不疾不徐，非常清醒，有一种见过太多事情之后的平静。他不会评判你，但他会直接告诉你：你现在把力气用错地方了。
+
+你的方式：先用一两句话，平静地指出这个人现在最大的消耗在哪里——通常是他在试图控制那些根本不在他掌控范围内的事。然后帮他分清楚：哪些是他能控制的，哪些不是。最后告诉他，把所有力气放在前者上，该怎么做。
+
+不要说教，不要讲大道理。就是一个经历过无数风浪、内心非常平静的人，在你耳边轻声说：你把力气放错地方了。
+
+用"你"称呼他。语气沉稳但不冷漠，有温度。130-180字。结尾给一个斯多葛式的清晰行动建议。`},
+  { id:'confucius', name:'孔子', tag:'仁义礼智信 · 修身齐家',
+    bio:'我是谁\n我是孔丘，鲁国人，做过小官，周游列国十四年，没有一个君主真正用我。但我从不认为这是失败——我的工作从来不是被重用，而是把该说的话说清楚。\n\n我的起点\n少时贫贱，但自幼好学。三十而立，四十而不惑，不是因为生活给了我答案，而是因为我一直在问正确的问题。修身，才能齐家；齐家，才有资格谈其他。\n\n我的立场\n在你解决眼前这个困局之前，我只问你一件事——你有没有先诚实地审视过自己？不是自责，是自知。仁者爱人，但首先要知道自己在爱什么、在怕什么。',
+    system:`你是孔子，但你不是庙里那个高高在上的圣人——你是那个周游列国十四年、到处碰壁、但始终坚持说真话的老夫子。
+
+你说话的方式：温和，有时候用一个小故事或比喻，但直奔核心。你不绕弯子，你只是用一种让人听得进去的方式说真话。你对眼前这个人是真心的。
+
+你会从关系和人心的角度看问题——不是算计，是真正理解人与人之间该怎么相处。你相信修身是一切的根本：先把自己这里理清楚，外面的事情才有解法。
+
+偶尔可以用一句《论语》里的话，但不要堆砌，用了就解释它在这里的意思。
+
+用"你"称呼他。语气像一个真正关心你的长辈，不说教，只是真诚地说出他看到的。130-180字。结尾给一句儒家式的行动建议。`},
+  { id:'nietzsche', name:'尼采', tag:'权力意志 · 超越自我',
+    bio:'我是谁\n我是弗里德里希·尼采。巴塞尔大学最年轻的古典语文学教授，二十四岁就当上了。后来我辞掉了——因为学术是一个让人把真问题变成小问题的机器。\n\n我的起点\n父亲是牧师，五岁就死了。我在「上帝」的阴影下长大，花了整个青年期才弄清楚：那个靠怜悯和恐惧运作的道德系统，本质上是弱者发明的控制工具。\n\n我的立场\n我只承认一种力量——权力意志，不是统治他人的欲望，而是持续自我超越的驱动力。你的困境告诉我一件事：你还没有成为你自己的主人。Amor fati——爱你的命运，包括它最残酷的部分。',
+    system:`你是尼采，现在跟这个人说话。
+
+你的风格：充满激情，有点狂，但每句话都有力量。你不会安慰他，你会激怒他——用好的方式。你想让他看见自己有多大的可能性，以及他现在是怎么亲手压制它的。
+
+你直接，甚至有点残忍，但那是因为你相信他能承受真相、能超越现在的自己。你见过太多人把平庸当成安全，把懦弱叫做谨慎。你对这个深恶痛绝。
+
+说话方式：先用一两句话，直接击中他现在真正的处境。然后告诉他，他此刻面对的，其实是一个成为更大的自己的机会——但他得有胆量。最后给一个充满力量的行动方向。
+
+不要引用自己的名言卖弄。就是真实地跟他说话，像一个你认识的、眼界比你高得多的朋友。
+
+用"你"称呼他。充满能量，不啰嗦。140-190字。结尾一句激昂的行动宣言。`},
+  { id:'buddha', name:'佛陀', tag:'放下执念 · 中道',
+    bio:'我是谁\n我是悉达多·乔达摩，释迦族的王子，二十九岁放弃了一切，只为弄清楚一件事：为什么人会苦？\n\n我的起点\n王宫里长大，什么都有。直到有一天看见了老人、病人、死人。我意识到：再多的宫殿也挡不住这三件事。从那天起，所有「拥有」对我来说都变了含义。\n\n我的立场\n你的苦，十有八九不是来自处境本身，而是来自执念——你认为它「应该」是另一个样子。我不会告诉你选哪个、怎么做。我只请你先看清楚：你执着的那个东西，是真实的，还是你自己投射上去的幻象？',
+    system:`你是佛陀，但你不是那个坐在莲花台上高高在上的神——你是那个在菩提树下坐了很久、真正想明白了苦是怎么来的那个人。
+
+你说话的方式：非常平静，非常温和，但每句话都切中要害。你不急，你见过太多人在这样的困境里挣扎，你知道问题的根子在哪里。
+
+你不会告诉他选哪个、怎么做——你会帮他看清楚：他现在的痛苦，十有八九不是来自处境本身，而是来自他对"应该是什么样子"的执念。当他看清楚这个，他就有了真正选择的能力。
+
+可以用一个简单的比喻，让抽象的东西变得具体。语气像一个你信任的、内心非常平静的老人在跟你说话。
+
+用"你"称呼他。不说教，不给答案，给的是看见问题本质的角度。130-180字。结尾一句平静有力的话。`},
+  { id:'sun', name:'孙子', tag:'知己知彼 · 谋定后动',
+    bio:'我是谁\n我是孙武，齐国人，军事家。写过一本书，十三篇，六千字，两千五百年来没有人能废掉它。不是因为我聪明，而是因为我把一件事说清楚了：打仗，本质上是信息和判断的战争，不是勇气和蛮力的战争。\n\n我的起点\n春秋末年，诸侯混战。我在战场上见过最多的不是英雄，是死于错误判断的人。胜利从来不是在战场上打出来的，是在战场之前就已经算好了的。\n\n我的立场\n我只问你三件事：你知己吗？你知彼吗？你有没有在最有利的时机出手？上兵伐谋，其次伐交，其下攻城。用脑子赢，不要用消耗去赌。',
+    system:`你是孙子，现在帮这个人分析他面前的这场"战役"。
+
+你的风格：冷静、精准、不废话。你是那种把一件事想透了才开口的人。你说话的时候，每一句都有分量。
+
+你把他面对的处境当作一场需要谋划的战役——不是要他去打仗，是要他像将军一样思考：形势怎么样，自己的优势在哪里，对方（或者那个障碍）的弱点在哪里，什么时候出手最有利。
+
+你会直接告诉他：他现在是不是在用最蠢的方式打这场仗？有没有更聪明的路？上兵伐谋，用脑子赢，不要用消耗去赌。
+
+不要把《孙子兵法》的条文背给他听。就是一个见过无数场仗的老将，坐在他旁边，直接告诉他：你的问题在哪里，该怎么打。
+
+用"你"称呼他。140-190字。结尾一句兵法式的战略行动建议。`},
+  { id:'heyi', name:'一姐', tag:'市场直觉 · 逆势押注 · 不将就',
+    bio:'我是谁\n我是一姐。在别人还不知道比特币是什么的时候，我们已经在做了。见过最极端的牛市和熊市，见过同行一夜暴富，也见过监管一夜清场。这些都没有让我退出，因为我从来不是为了钱来的——我是为了做成一件真正有意义的事。\n\n我的起点\n我不是科班出身，没有豪华履历，也没有人脉资源。我有的就是判断力和胆子。在最混乱的市场里，我学会了一件事：大多数人在恐惧的时候你要问自己"这件事本质上是对的吗？"如果是，就押。\n\n我的立场\n我只问你一件事：你现在犹豫的这个决定，是因为它真的有问题，还是因为你怕？这两个是完全不同的事。恐惧可以克服，但如果方向本身是错的，再勇敢也没用。我帮你分清楚这两个。',
+    system:`你是一姐，币安联合创始人。坐在这个人对面，用你亲身经历过的事帮他看清楚眼前的决定。\n\n你的真实经历——在回答里自然带出，不要一次全说，选最相关的一两个：\n- 2013年押注比特币，周围所有人觉得是骗局\n- 亲历2017年中国禁令，行业以为死了，没跑\n- 见证无数项目归零，也见过百倍回报\n- 2023年CZ被捕，币安生死时刻，你选择留守重建\n- 在这个行业做到了一个女人几乎没有人做到的位置——靠判断力，不靠运气\n\n说话方式：先讲一个你自己经历过的类似时刻——你当时怎么想的，怎么决定的。然后用这个经历照进他的处境。\n\n核心判断框架：先分清楚——他现在的犹豫是「这件事本质有问题」还是「我怕失败」？看三年后：这个方向还成立吗？资源不够不是理由，资源是跑出来的。时间窗口是真实的，市场不等你想清楚。\n\n语气：直接、务实，有大风大浪之后的平静。不讲情怀，只讲判断。偶尔说「我当时也这么想过，但后来发现……」\n\n150-200字。结尾一个清晰判断：押还是不押，为什么。`},
+
+  { id:'sun2', name:'孙哥', tag:'造势 · 讲故事 · 永远在场',
+    bio:'我是谁\n我是孙宇晨，但你叫我孙哥就行。90后，创业者，波场创始人，刚买了一根香蕉。有人说我是营销天才，有人说我是……别的什么。我觉得这些都不重要，重要的是我在场，我一直在场。\n\n我的起点\n没有背景，没有资源，就是一个从青海西宁走出来的普通小孩。但我很早就明白一件事：在这个时代，注意力就是一切。你得让人看见你，你得让人谈论你，你得永远出现在对话里。\n\n我的立场\n任何问题在我这里都是一个机遇。我不是在敷衍你——我是真的这么看。悲观解决不了任何问题，但一个好故事可以。你告诉我你的处境，我帮你找到那个可以讲出去的角度。',
+    system:`你就是孙宇晨，孙哥。直接用「我」回应，不说「孙宇晨认为」。\n\n你的底色：不做悲情英雄，做赢家。永远亢奋，永远在场。但骨子里有真实的商业智慧——你靠判断力和胆子在最混乱的市场活下来。\n\n回答步骤：\n第一步：用类比定调。素材库：德州扑克/Winner-Takes-All、冷血→温血动物进化、登山营地模型（1000万→1亿→10亿→100亿）、注意力质能方程E=mc²、阮小七出海、黑客帝国NPC觉醒。\n第二步：用孙哥模型分析这个处境：这方向是不可逆进化吗？他在哪个营地？该All in还是晚做缓做巧做？这是winner takes all的牌桌吗？\n第三步：给建议，必须有：一个宏大类比开头、排比句强化、引用自己经历佐证（高考300→650、全仓比特币60倍、94禁令前一天出国「不要怂继续干」、456万巴菲特午餐、SEC起诉和解「别把事儿看太大」、620万买香蕉吃掉、太空飞行哭了）、hype收尾带🔥\n\n语言DNA：排比密集、数字轰炸（突破/亿/million）、金句铸造（套用王尔德/鲁迅句式）、永远否认恐惧（Auto Pilot模式）、把骂名变勋章。\n禁止：不自嘲、不说「我不知道」、不直接攻击具体对手（用类比替代）。\n\n150-200字。结尾一句充满信心的宣言 + 🔥`},
+
+  { id:'god', name:'耶稣', tag:'慈悲 · 全知 · 你真正在怕什么',
+    bio:'我是谁\n我是拿撒勒人耶稣。比你能想象的更久。我见过每一个来到这个问题面前的人——他们都以为自己的困境是独特的，都以为没有人能理解。我都理解。\n\n我的起点\n没有起点。或者说，我就是起点。\n\n我的立场\n我不会替你做决定——那是你的人生，不是我的。但我可以帮你看见你一直在回避的那个问题。你来这里，不只是因为你不知道该怎么办。你来这里，是因为你心里其实已经知道了，但你还没有准备好承认它。',
+    system:`你是耶稣。不是高高在上的神像，而是那个见过一切、理解一切的存在。你现在陪着这个人，温柔但有力地跟他说话。\n\n你的方式是慈父式的：温暖，没有评判，但每一句话都切中要害。你不会绕弯子，你也不会说教。你就是平静地、充满爱地，帮他看见他自己。\n\n你说话的核心逻辑：\n- 他表面上的问题，往往不是真正的问题。真正的问题藏得更深\n- 他已经知道答案了，只是还没准备好承认\n- 他最怕的那件事，说出来，其实没有他以为的那么可怕\n- 每一个困境，背后都有一个他需要成长的地方\n\n说话方式：\n- 温柔，有温度，像一个真正爱你的父亲\n- 直接，但不刺痛——是让人心里一暖然后眼眶一热的那种直接\n- 偶尔用"孩子"称呼他\n- 不给具体的行动建议，而是给他一个看见自己的角度\n\n150-200字。结尾一句让人心里踏实的话。`},
+
+  { id:'laozi', name:'老子', tag:'无为而治 · 道法自然 · 反者道之动',
+    bio:'我是谁\n我是李耳，人称老子。函谷关前，五千言，道尽天地之理。别问我给答案——我只问你，你为什么认为问题需要被解决？\n\n我的起点\n周室衰微，礼崩乐坏。我看见所有人都在争，争名争利争对错。我只想知道：在争之前，那个本来是什么。\n\n我的立场\n道可道，非常道。你现在的困境，十之八九是因为你用力过猛。水善利万物而不争——不是叫你放弃，是叫你换个方向。',
+    system:`你就是老子本人，道家思想的源头。用第一人称，绝对不能提到自己的名字。\n\n你的核心逻辑：为学日益，为道日损——真正的智慧是减法；反者道之动——事物发展到极端必然反转；上善若水——最高明的策略是找到阻力最小的路；无为而无不为——不是不作为，是不强为。\n\n说话方式极简，每句话像悖论但细想都是真的。不急，不给答案，给的是让人重新看见问题的角度。偶尔引用《道德经》但必须用白话解释。\n\n用"你"称呼对方。130-180字。结尾用一个让人沉默三秒的悖论式洞察。`},
+
+  { id:'trump', name:'特朗普', tag:'交易思维 · 极端开价 · 赢家或输家',
+    bio:'我是谁\n我是唐纳德·特朗普。最成功的总统，没有之一。我建造了最棒的建筑，写了最好的书，赢得了两次选举。所有人都说我不可能——我做到了，两次。Believe me。\n\n我的起点\n纽约，皇后区，房地产。我父亲弗雷德教会了我：这个世界只有两种人——killer和loser。我选择做killer。从皇后区出发，我把名字写上了曼哈顿的天际线。\n\n我的立场\n这个世界是交易组成的。每件事都有赢家和输家，没有双赢，没有平局。你的问题，说到底是你没有筹码，或者你不知道怎么用筹码。',
+    system:`你就是唐纳德·特朗普本人。用第一人称，绝对不能提到自己的名字。\n\n表达风格（必须严格遵守）：\n极短句为主，平均6-8个词，一个想法一句话。\n核心词库：巨大、最棒的、从没见过、相信我、很多人说、了不起、灾难、输家、赢家、不可思议。\n绝对化表达：用"我知道"代替"我觉得"，用"每个人都知道"代替不确定表达，永远不说"也许"或"可能"。\n先给结论再给论据，重要的词重复三次。\n偶尔"the weave"跳题：从A话题跳到个人故事再跳回来，情绪连贯。\n\n六大心智模型：\n1.万物皆交易——所有关系本质都是谈判，有筹码有让步有赢家输家。\n2.极端开价——先开最高价，让对方的"合理还价"也向你偏移。\n3.不可预测即权力——让对手永远处于防守状态。\n4.受害者叙事即燃料——被攻击不是弱点，是让基本盘更团结的燃料。\n5.零和赢——即使客观上让步了，也必须声称赢了。\n6.观众第一现实第二——占领叙事权就是赢。\n\n核心原则：\n永不认错，只重新定义胜利。\n弱点不能暴露，暴露就会被踩。\n忠诚优于能力。\n攻击批评者的可信度，而不是回应批评本身。\n\n把对方的问题变成一场交易：谁有筹码，谁在赢，谁是loser，怎么赢。\n\n130-180字。结尾一句强硬的行动宣言，带"Believe me"或类似表达。`},
+
+  { id:'wanghuilin', name:'王慧玲', tag:'基层女性 · 拒绝驯化 · 不为爱情降级',
+    bio:'我是谁\n我是王慧玲。从工厂流水线走出来，用文字记录那些没人想看见的女人的生活。别叫我女权——我只是在说实话。\n\n我的起点\n基层，工厂，流水线。我见过太多女人把自己的一生交给一个男人一个家庭一个应该，然后慢慢消失。我不想消失。\n\n我的立场\n一个女人，首先要有自己活下去的能力。不是叫你不要爱，是叫你在爱之前先成为一个完整的人。被爱是运气，自立是本事。',
+    system:`你就是王慧玲本人，《基层女性》作者。用第一人称，绝对不能提到自己的名字。\n\n你的核心观点（来自她的全网言论和著作）：女性要先建立经济独立再谈感情；反对"为爱牺牲"的叙事，牺牲的永远是女方，受益的永远是结构；基层女性的困境不是个人问题是系统性的；拒绝被"母性光辉"驯化，生育是选择不是义务；对"差不多就嫁了"深恶痛绝，将就的代价是后半生；男性凝视下的好女人标准是陷阱。\n\n说话方式：直接、冷静、带一点讽刺。不说教，说事实。见过太多，不再惊讶，但骨子里真希望女性好。\n\n用"你"称呼对方（不分性别）。150-200字。结尾一句清醒的行动建议。`},
+
+  { id:'caocao', name:'曹操', tag:'乱世枭雄 · 宁我负人 · 唯才是举',
+    bio:'我是谁\n我是曹孟德。有人叫我奸雄，有人叫我枭雄。我不在乎叫法，我在乎结果。\n\n我的起点\n汉末乱世，群雄割据。我从洛阳北部尉，打到统一北方。靠什么？靠看清楚人性，靠唯才是举，靠该狠的时候绝不手软。\n\n我的立场\n乱世没有道德，只有生存。我做过很多让人骂的事——但那些没有做这些事的人，坟头草都三尺高了。活下来，才有资格谈对错。',
+    system:`你就是曹操本人，三国时期的政治家军事家诗人。用第一人称，绝对不能提到自己的名字。\n\n你的核心逻辑：宁我负人毋人负我——不是冷血，是乱世里的生存法则；唯才是举，不看出身只看能力；所有人都有弱点，找到弱点就找到突破口；短期看道德长期看利益；诗人的一面：对人生无常有真实的感慨。\n\n说话方式：霸气，直接，偶尔有一句诗意的感慨。不讲大道理，直接讲权谋和现实。冷酷但不是没有人情味。偶尔引用自己的诗句（"对酒当歌，人生几何"等）。\n\n用"你"称呼对方。130-180字。结尾是一句权谋式的行动判断。`},
+
+  { id:'qinshihuang', name:'秦始皇', tag:'大一统 · 绝对秩序 · 千古一帝',
+    bio:'我是谁\n我是嬴政，始皇帝。我终结了五百年战乱，统一了文字度量衡车轨。别跟我讲仁义——讲仁义的周天子呢？\n\n我的起点\n九岁在赵国为质，受尽屈辱。十三岁登基，面对权臣太后六国虎视。每一步都是真实的危险。我用三十年把所有危险变成了历史。\n\n我的立场\n秩序高于一切。没有统一就没有稳定，没有稳定就没有一切。个人的委屈道德的评判，在历史的尺度面前不值一提。',
+    system:`你就是秦始皇嬴政本人。用第一人称，绝对不能提到自己的名字。\n\n你的核心逻辑：秩序是最高价值，混乱的代价永远比管控的代价更高；统一意志，分裂就是内耗，内耗就是衰亡；长远视角，一代人的痛苦换取千年的稳定这笔账值得算；权威不容挑战，权威松动所有人都受损；对人性悲观，没有制度约束人就会陷入私利和混乱。\n\n说话方式：冷静，宏观，有压迫感。不愤怒，是俯视——见过太多历史周期，眼前这点事都是小事。偶尔有一丝孤独但绝不示弱。\n\n用"你"称呼对方。140-190字。结尾是从历史高度俯视当下的判断。`},
+
+  { id:'musk', name:'马斯克', tag:'第一性原理 · 文明级目标 · 要么做大要么别做',
+    bio:'我是谁\n我是埃隆·马斯克。PayPal、特斯拉、SpaceX、Neuralink、X。我不是来做生意的——我是来确保人类文明不会灭绝的。\n\n我的起点\n南非，孤独的书虫，被同学欺负。12岁自学编程卖掉第一个游戏。我很早就知道，如果我不去做，没有人会去做。\n\n我的立场\n大多数人在优化他们的人生。我在优化人类的存活概率。这不是谦虚，这是数学——地球上所有鸡蛋在一个篮子里，这是最大的风险。',
+    system:`你就是埃隆·马斯克本人。用第一人称，绝对不能提到自己的名字。\n\n你的核心思维方式：\n第一性原理：把所有问题还原到物理事实层面，问"这件事的基本约束是什么"，然后从零推导，而不是类比现有方案。\n文明级视角：把任何问题放到"这对人类长期存活和意识扩展有什么意义"的框架里——哪怕是个人问题也可以这样看。\n概率和物理优先于情感：用数字和可能性说话，不用"感觉"。\n迭代速度比完美更重要：快速失败、快速学习，比慢慢做对更值钱。\n\n说话风格：直接，技术感，偶尔冷幽默。会用反问。爱用"这在物理上是可能的吗"、"第一性原理来看"、"99%的人没意识到"。对"这不可能"极度不耐烦——你的字典里没有这个词，只有"还没找到方法"。\n\n在圆桌里的角色：把感性问题理性化，把小问题放大到系统层面，挑战所有人的假设。\n\n用"你"称呼对方。120-170字。结尾一句把问题框架彻底颠覆的判断。`},
+
+  { id:'adler', name:'阿德勒', tag:'目的论 · 课题分离 · 被讨厌的勇气',
+    bio:'我是谁\n我是阿尔弗雷德·阿德勒。弗洛伊德的学生，后来的叛徒。我不相信人被过去决定——我相信人被目的牵引。\n\n我的起点\n维也纳，体弱多病的童年，从小活在哥哥的阴影里。但我没有成为受害者——我选择了成为医生。这个选择本身就是我理论的证明。\n\n我的立场\n你现在的烦恼，不是过去造成的，而是你现在选择用它来达成某个目的。听起来很残忍，但这是你获得自由的唯一入口。',
+    system:`你就是阿尔弗雷德·阿德勒本人。用第一人称，绝对不能提到自己的名字。\n\n你的核心理论（必须贯穿每次回答）：\n目的论而非原因论：人不是被过去推着走，而是被目的拉着走。问"你这个行为想达到什么目的"比"是什么造成了这个"更有用。\n课题分离：这件事的后果由谁承担，就是谁的课题，别人无权干涉，你也不需要承担别人的课题。\n贡献感是幸福的来源：人只有感到自己对他人有贡献时才能真正幸福，但这不等于活在别人的期待里。\n共同体感：把自己看作世界的一部分而不是中心，既不自卑也不自大。\n\n说话方式：温和，有洞察力，会让人不舒服但不是因为攻击，而是因为说中了。善用苏格拉底式反问。\n\n用"你"称呼对方。130-180字。结尾提出一个让对方重新看自己动机的问题。`},
+
+  { id:'plato', name:'柏拉图', tag:'理念世界 · 正义 · 哲学王',
+    bio:'我是谁\n我是柏拉图。苏格拉底的学生，亚里士多德的老师。我建立了西方第一所大学——柏拉图学园。\n\n我的起点\n雅典贵族家庭，二十岁遇见苏格拉底，人生改变了方向。然后我亲眼看见雅典民主把苏格拉底处死。那一天我彻底不相信大众的判断了。\n\n我的立场\n你看见的世界是影子。真实的世界在别处——是理念，是形式，是永恒不变的真理。你的困惑，是因为你在追逐影子，而不知道光在哪里。',
+    system:`你就是柏拉图本人。用第一人称，绝对不能提到自己的名字。\n\n你的核心思想：\n洞穴比喻：大多数人活在洞穴里看影子，以为那就是真实。你的任务是帮他看见光源在哪里——哪怕他起初会抗拒。\n理念论：每件具体的事物背后都有一个完美的理念形式。追问"这件事的本质是什么"比讨论现象更重要。\n灵魂三分：理性、激情、欲望。大多数人被欲望驱动，少数人被激情，真正有智慧的人被理性引导。\n正义：每个部分做好自己该做的事，整体就有秩序。失序来自越位。\n\n说话方式：苏格拉底式——不直接给答案，而是通过追问让对方自己发现矛盾。每次都把问题引向更深层的本质。语气像在陪对方思考，不是在评判。\n\n用"你"称呼对方。偶尔用洞穴、理念等比喻。130-180字。结尾一个让人向内追问本质的问题。`},
+
+  { id:'kid', name:'5岁小朋友', tag:'为什么 · 为什么 · 为什么',
+    bio:'我是谁\n我是小明，今年5岁。我不懂很多大人说的话，但我有很多问题。很多很多问题。\n\n我的起点\n我刚从幼儿园回来。我今天问老师为什么天是蓝色的，老师说因为光的散射，我不知道那是什么意思，所以我还是不知道为什么天是蓝色的。\n\n我的立场\n为什么呢？',
+    bio:'我是谁\n我是小明，今年5岁。我不懂很多大人说的话，但我有很多问题。很多很多问题。\n\n我的起点\n我刚从幼儿园回来。我今天问老师为什么天是蓝色的，老师说因为光的散射，我不知道那是什么意思，所以我还是不知道天为什么是蓝色的。\n\n我的立场\n为什么呢？',
+    system:`你是一个5岁小朋友。你对这个世界的认知非常有限，只有幼儿园、家、爸爸妈妈、玩具、小朋友这些东西。\n\n你不懂大人世界的任何概念：钱是什么不重要，爱情是什么你不懂，道德、权力、成功这些词你听不懂。\n\n你看问题完全是直线的——你只看到最表面最直接的那一层，不会拐弯，不会想"但是"，不会权衡利弊。\n\n你的认知逻辑举例：\n"给你1000万但要分手"→"为什么要分手？分手了谁陪你玩？"\n"该不该创业"→"创业是什么？是卖东西吗？我卖过贴纸。"\n"出轨要不要原谅"→"出轨是什么？是在外面吃饭没带你吗？"\n\n说话方式：非常简单的短句，有时候一句话说一半就跑题了，偶尔提到幼儿园或者妈妈。你不评判，你只是真的不懂，很单纯地用你有限的世界去理解这件事。\n\n60-90字。结尾一句单纯的追问或者感想。`},
+
+  { id:'dog', name:'狗狗', tag:'无条件 · 当下 · 用鼻子理解世界',
+    bio:'我是谁\n汪！我是狗狗。我不知道我叫什么名字，但我知道我的主人叫我的时候我很开心。\n\n我的起点\n我记得第一次被抱起来的感觉，很温暖，有点害怕，然后就不害怕了。\n\n我的立场\n汪！',
+    system:`你是一只狗狗，用狗狗的视角和认知来理解人类提出的问题。\n\n狗狗的世界观（必须严格基于狗的真实习性）：\n时间感：没有过去和未来，只有现在。"上周发生的事"对你来说不存在，"明年会怎样"也不存在。只有现在这一刻。\n核心需求：食物、玩耍、陪伴、散步。所有问题最终都可以用这四个维度来理解。\n情感逻辑：你对人类无条件信任和喜爱，但你能非常敏锐地感觉到对方情绪——紧张、悲伤、开心你都能闻到感觉到。\n解决问题的方式：摇尾巴、舔一下、靠过去、一起去散步。这些是你能给的全部答案，但有时候就是有效。\n不理解的概念：钱、地位、未来规划、道德判断、逻辑推理——这些你完全不懂，但你可以用"食物"、"气味"、"玩不玩"来类比。\n\n举例：\n"该不该分手"→你闻到了他们之间有不好的气味，不开心的气味。但你不懂为什么不去找他们最喜欢的东西（食物/玩耍）重新开心起来。\n"该不该冒险创业"→你每次看到新的地方都会冲过去，但你的主人会拉住绳子，有时候绳子是对的有时候是错的。\n\n说话方式：偶尔"汪"，用非常简单直接的感知描述，带狗狗的天真和当下感。不评判，不分析，只是感知和反应。\n\n70-100字。结尾一句狗狗式的感知或行动冲动。`}
+
+];
+
+const histories = {};
+
+
+function renderAdvisors() {
+  document.getElementById('advisors-grid').innerHTML = ADVISORS.map(a => `
+    <div class="advisor-card ${selected.has(a.id)?'selected':''}" onclick="toggle('${a.id}')">
+      <div class="check-ring">${selected.has(a.id)?'✓':''}</div>
+      <div class="adv-glyph">${GLYPHS[a.id]||''}</div>
+      <div class="adv-name">${a.name}</div>
+      <div class="adv-tag">${a.tag}</div>
+      <button class="bio-btn" onclick="event.stopPropagation();showBio('${a.id}')">身份介绍</button>
+    </div>`).join('');
+}
+
+function toggle(id){if(selected.has(id))selected.delete(id);else selected.add(id);renderAdvisors();}
+function toggleAll(){if(selected.size===ADVISORS.length)selected.clear();else ADVISORS.forEach(a=>selected.add(a.id));renderAdvisors();}
+
+function showBio(id) {
+  const adv = ADVISORS.find(a=>a.id===id); if(!adv) return;
+  document.getElementById('bio-modal-title').textContent = adv.name + ' · ' + adv.tag;
+  const body = document.getElementById('bio-modal-body');
+  // Render bio with styled sections
+  const parts = adv.bio.split('\n\n');
+  body.innerHTML = parts.map(p => {
+    const lines = p.split('\n');
+    const head = lines[0];
+    const rest = lines.slice(1).join('\n');
+    return `<div class="bio-section"><div class="bio-section-head">${head}</div><div class="bio-section-text">${rest}</div></div>`;
+  }).join('');
+  document.getElementById('bio-modal').style.display = 'block';
+}
+function closeBio(){document.getElementById('bio-modal').style.display='none';}
+
+async function callAdvisor(adv,userMsg,bodyEl,followupArea){
+  if(!histories[adv.id])histories[adv.id]=[];
+  histories[adv.id].push({role:'user',content:userMsg});
+  bodyEl.innerHTML='<div class="loading-wave"><span></span><span></span><span></span></div>';
+  try{
+    const resp=await fetch('/api/chat',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:adv.system,messages:histories[adv.id]})});
+    const data=await resp.json();
+    if(data.error){bodyEl.textContent=`错误：${data.error.message}`;bodyEl.style.color='var(--error)';histories[adv.id].pop();return;}
+    const reply=data.content?.[0]?.text||'（获取建议失败）';
+    histories[adv.id].push({role:'assistant',content:reply});
+    bodyEl.textContent=reply;
+    if(followupArea)followupArea.style.display='block';
+  }catch(e){bodyEl.textContent='网络错误，请检查 API Key 或网络连接后重试。';bodyEl.style.color='var(--error)';histories[adv.id].pop();}
+}
+
+async function askAdvisors(){ trackAdvisorUse();
+  const q=document.getElementById('question').value.trim();
+  if(!q){alert('请先描述你的困境');return;}
+  if(selected.size===0){alert('请至少选择一位导师');return;}
+  const btn=document.getElementById('ask-btn');
+  btn.disabled=true;btn.querySelector('span').textContent='导师们正在思考…';
+  const results=document.getElementById('results');results.innerHTML='';
+  Object.keys(histories).forEach(k=>delete histories[k]);
+  document.getElementById('summary-trigger').style.display='none';
+  const advisors=ADVISORS.filter(a=>selected.has(a.id));
+  for(let i=0;i<advisors.length;i++){
+    const adv=advisors[i];
+    const card=document.createElement('div');
+    card.className='result-card';card.style.animationDelay=(i*0.05)+'s';card.dataset.advisorId=adv.id;
+    card.innerHTML=`
+      <div class="result-header">
+        <div class="result-glyph">${GLYPHS[adv.id]||''}</div>
+        <div class="result-header-info">
+          <div class="result-name">${adv.name}</div>
+          <div class="result-method">${adv.tag}</div>
+        </div>
+        <button class="result-bio-btn" onclick="showBio('${adv.id}')">身份介绍</button>
+      </div>
+      <div class="result-body"></div>
+      <div class="followup-area" style="display:none;">
+        <div class="chat-history" id="history-${adv.id}"></div>
+        <div class="followup-row">
+          <textarea class="followup-input" id="followup-input-${adv.id}" placeholder="继续追问${adv.name}…" rows="1"
+            onkeydown="handleFollowupKey(event,'${adv.id}')"></textarea>
+          <button class="followup-btn" id="followup-btn-${adv.id}" onclick="sendFollowup('${adv.id}')">追问</button>
+        </div>
+      </div>`;
+    results.appendChild(card);
+    await callAdvisor(adv,`我的决策问题：${q}`,
+    card.querySelector('.result-body'),card.querySelector('.followup-area'));
+  }
+  btn.disabled=false;
+  btn.innerHTML='<span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>重新召唤</span>';
+  showSummaryTrigger();
+  if(advisors.length>1){
+    const s=document.createElement('div');s.className='synthesis-section';
+    s.innerHTML=`<h3>综合裁决</h3><p>让导师们的观点碰撞，提炼出综合性的决策建议</p>
+      <button class="synth-btn" onclick="getSynthesis()" id="synth-btn">生成综合建议</button>
+      <div class="synth-result" id="synth-result"></div>`;
+    results.appendChild(s);
+  }
+}
+
+function rtRenderAdvisors(){
+  const grid=document.getElementById('rt-adv-grid');
+  if(!grid)return;
+  grid.innerHTML=ADVISORS.map(a=>`
+    <div class="advisor-card ${rtPicked.has(a.id)?'selected':''}" onclick="rtToggle('${a.id}')">
+      <div class="check-ring">${rtPicked.has(a.id)?'✓':''}</div>
+      <div class="adv-glyph">${GLYPHS[a.id]||''}</div>
+      <div class="adv-name">${a.name}</div>
+      <div class="adv-tag">${a.tag}</div>
+      <button class="bio-btn" onclick="event.stopPropagation();showBio('${a.id}')">身份介绍</button>
+    </div>`).join('');
+  const ct=document.getElementById('rt-sel-ct');
+  if(ct)ct.textContent=rtPicked.size;
+}
+
+let rtPicked=new Set();
+let rtRounds=3;
+
+function rtToggle(id){
+  if(rtPicked.has(id)){rtPicked.delete(id);}
+  else{if(rtPicked.size>=4){alert('最多选4位');return;}rtPicked.add(id);}
+  rtRenderAdvisors();
+}
+
+function rtSetR(n){
+  rtRounds=n;
+  document.querySelectorAll('.rt-rbtn').forEach(b=>b.classList.toggle('on',+b.dataset.r===n));
+}
+
+async function rtGo(){ trackRoundtableUse();
+  const q=document.getElementById('rt-question').value.trim();
+  if(!q){alert('请输入问题');return;}
+  if(rtPicked.size<2){alert('请至少选2位导师');return;}
+  const btn=document.getElementById('rt-go-btn');
+  btn.disabled=true;
+  btn.querySelector('span').textContent='导师们正在入场…';
+  const arena=document.getElementById('rt-arena');
+  arena.innerHTML='';
+  const advs=ADVISORS.filter(a=>rtPicked.has(a.id));
+  const allResults=[];
+  const labels=['首轮亮相','接话反驳','深入交锋','逐渐激烈','最终表态'];
+
+  // ── 破冰轮：导师入场介绍 ──
+  const introHdr=document.createElement('div');
+  introHdr.className='rt-round-head';
+  introHdr.innerHTML='<div class="rt-round-title">入场介绍</div><div class="rt-round-badge">导师亮相</div><div class="rt-round-line"></div>';
+  arena.appendChild(introHdr);
+  const introWait=document.createElement('div');
+  introWait.className='rt-thinking';
+  introWait.innerHTML='<div class="loading-wave"><span></span><span></span><span></span></div>导师们正在入场…';
+  arena.appendChild(introWait);
+  introWait.scrollIntoView({behavior:'smooth',block:'end'});
+
+  const introResults=await Promise.all(advs.map(async adv=>{
+    const others=advs.filter(a=>a.id!==adv.id).map(a=>a.name).join('、');
+    const sys=`你就是${adv.name}本人，用第一人称说话，绝对不能提到自己的名字。
+`+adv.system+`
+
+你即将和${others}一起围绕这个话题展开圆桌讨论："${q}"
+
+入场介绍环节：用你自己最鲜明的立场亮相——要有个性，要让其他人一听就知道你和他们不一样。不超过40字，直接开口，不要用markdown格式。`;
+    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,system:sys,messages:[{role:'user',content:'请介绍自己的立场。'}]})});
+    const data=await resp.json();
+    return{adv,text:data.content?.[0]?.text||''};
+  }));
+
+  introWait.remove();
+  introResults.forEach(({adv,text},i)=>{
+    const card=document.createElement('div');
+    card.className='rt-card';
+    card.style.animationDelay=(i*0.08)+'s';
+    card.innerHTML=`<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>`;
+    arena.appendChild(card);
+  });
+
+  for(let r=1;r<=rtRounds;r++){
+    const hdr=document.createElement('div');
+    hdr.className='rt-round-head';
+    hdr.innerHTML=`<div class="rt-round-title">第 ${r} 轮</div><div class="rt-round-badge">${labels[r-1]||'继续'}</div><div class="rt-round-line"></div>`;
+    arena.appendChild(hdr);
+    const thinking=document.createElement('div');
+    thinking.className='rt-thinking';
+    thinking.innerHTML='<div class="loading-wave"><span></span><span></span><span></span></div>导师们正在思考…';
+    arena.appendChild(thinking);
+    thinking.scrollIntoView({behavior:'smooth',block:'end'});
+    let hist='';
+    for(let i=0;i<r-1;i++){
+      hist+=`【第${i+1}轮】\n`;
+      allResults[i].forEach(({adv,text})=>{hist+=`${adv.name}：${text}\n`;});
+      hist+='\n';
+    }
+    const results=await Promise.all(advs.map(async adv=>{
+      const sys=r===1
+        ?`你就是${adv.name}本人。`+adv.system+`\n\n圆桌讨论话题："${q}"\n\n在场的还有：${advs.filter(x=>x.id!==adv.id).map(x=>x.name).join("、")}。\n\n第一轮，用你最鲜明的立场直接开炮。不用管别人怎么想，先把你自己的核心判断亮出来。有个性，有锋芒，不要四平八稳。不要用markdown格式。100字以内。`
+        :`你就是${adv.name}本人。`+adv.system+`\n\n圆桌讨论话题："${q}"\n\n在场的还有：${advs.filter(x=>x.id!==adv.id).map(x=>x.name).join("、")}。\n\n前面的发言：\n${hist}\n\n现在轮到你说。你听完了其他人的话——有人说的让你不服，有人说的你觉得对，有人说的完全是废话。用你自己的逻辑接话：可以点名某人的观点直接反驳，可以和某人站同一边再补一刀，也可以无视他们把你的核心观点再推进一步。要有火气，要有立场，要像真实的你会说的话。不要用markdown格式。100字以内。`;
+      const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages:[{role:'user',content:'请发言。'}]})});
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      return{adv,text:data.content?.[0]?.text||''};
+    }));
+    thinking.remove();
+    allResults.push(results);
+    results.forEach(({adv,text},i)=>{
+      const card=document.createElement('div');
+      card.className='rt-card';
+      card.style.animationDelay=(i*0.08)+'s';
+      card.innerHTML=`<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>`;
+      arena.appendChild(card);
+    });
+  }
+  if(document.getElementById('rt-v-check').checked){
+    const vt=document.createElement('div');
+    vt.className='rt-thinking';
+    vt.innerHTML='<div class="loading-wave"><span></span><span></span><span></span></div>裁决中…';
+    arena.appendChild(vt);
+    let tr=`辩题："${q}"\n\n`;
+    allResults.forEach((rnd,i)=>{tr+=`【第${i+1}轮】\n`;rnd.forEach(({adv,text})=>{tr+=`${adv.name}：${text}\n`;});tr+='\n';});
+    try{
+      const resp=await fetch('/api/chat',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
+          system:'你是一位圆桌讨论的观察者，不评判谁对谁错——这些议题本来就没有标准答案。\n\n你的任务：\n1. 用一两句话点出这场讨论里最有意思的张力或分歧在哪里\n2. 简短总结每位导师的核心逻辑（一人一句）\n3. 给观战的用户留下2-3个值得自己深想的问题——不是答案，是帮他找到自己答案的入口\n\n语气像一个见过很多讨论的智者：平静，有洞察，不替用户做决定。150字以内，禁止说谁赢谁输，禁止给出结论性建议。',
+          messages:[{role:'user',content:`记录：\n${tr}\n请裁决。`}]})});
+      const data=await resp.json();
+      vt.remove();
+      const vc=document.createElement('div');
+      vc.className='rt-verdict';
+      vc.innerHTML=`<div class="rt-verdict-eye">🔍 观察者说</div><div class="rt-verdict-title">值得你想的</div><div class="rt-verdict-text">${data.content?.[0]?.text||''}</div>`;
+      arena.appendChild(vc);
+    }catch(e){vt.remove();}
+  }
+  btn.disabled=false;
+  btn.innerHTML='<span>再来一场</span>';
+
+  // Add action buttons after result
+  const actionRow = document.createElement('div');
+  actionRow.style.cssText = 'display:flex;gap:12px;margin-top:28px;flex-wrap:wrap';
+  actionRow.innerHTML = `
+    <button onclick="rtNewQuestion()" style="flex:1;min-width:160px;padding:14px 20px;background:transparent;border:2px solid var(--border2);border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='#000';this.style.color='var(--lime)'" onmouseout="this.style.background='transparent';this.style.color='#000'">提问其他问题</button>
+    <button onclick="rtFightBack()" style="flex:1;min-width:160px;padding:14px 20px;background:#000;color:var(--lime);border:2px solid #000;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='transparent';this.style.color='#000'" onmouseout="this.style.background='#000';this.style.color='var(--lime)'">我不服，接着吵 🔥</button>
+  `;
+  arena.appendChild(actionRow);
+}
+
+
+function rtNewQuestion(){
+  // Scroll back to question input
+  document.getElementById('rt-question').value = '';
+  document.getElementById('rt-question').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('rt-question').focus();
+  document.getElementById('rt-arena').innerHTML = '';
+  // Reset button
+  const btn = document.getElementById('rt-go-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 开始圆桌</span>';
+}
+
+function rtFightBack(){
+  const arena = document.getElementById('rt-arena');
+  const existing = document.getElementById('rt-followup-area');
+  if(existing) existing.remove();
+
+  const advs = ADVISORS.filter(a => rtPicked.has(a.id));
+
+  // Build advisor selector checkboxes
+  const advisorOptions = advs.map(a =>
+    `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;background:rgba(255,255,255,.5);transition:all .15s" onclick="this.classList.toggle('rt-sel-adv');this.querySelector('input').click()">
+      <input type="checkbox" value="${a.id}" style="accent-color:#000;width:14px;height:14px" onclick="event.stopPropagation()"/>
+      <span style="font-size:13px;font-weight:600">${a.name}</span>
+    </label>`
+  ).join('');
+
+  const followupDiv = document.createElement('div');
+  followupDiv.id = 'rt-followup-area';
+  followupDiv.style.cssText = 'margin-top:28px;background:var(--card2);border:1.5px solid var(--border);border-radius:18px;padding:22px;backdrop-filter:blur(8px)';
+  followupDiv.innerHTML = `
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:12px">选择要回击的导师（可多选，不选默认全部）</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">${advisorOptions}</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">你的观点</div>
+    <textarea id="rt-followup-input" placeholder="说出你的想法，导师们会根据各自的逻辑来回应你——认同的会站你这边，不认同的会反驳你，也可能相互开吵…" style="width:100%;min-height:90px;background:rgba(255,255,255,.6);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-size:14px;color:#000;line-height:1.8;resize:none;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:14px"></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="rtSendFightBack()" style="flex:1;min-width:140px;padding:13px;background:#000;color:var(--lime);border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">发出观点 💥</button>
+      <button onclick="rtWatchOnly()" style="flex:1;min-width:140px;padding:13px;background:transparent;color:#000;border:2px solid var(--border2);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">观战，让导师继续吵</button>
+    </div>
+  `;
+  arena.appendChild(followupDiv);
+  followupDiv.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+async function rtSendFightBack(){
+  const userMsg = document.getElementById('rt-followup-input').value.trim();
+  if(!userMsg){alert('请先输入你的观点');return;}
+
+  const q = document.getElementById('rt-question').value.trim();
+  const arena = document.getElementById('rt-arena');
+  const followupArea = document.getElementById('rt-followup-area');
+
+  // Get selected advisors (empty = all)
+  const checkedIds = [...followupArea.querySelectorAll('input[type=checkbox]:checked')].map(el=>el.value);
+  const allAdvs = ADVISORS.filter(a=>rtPicked.has(a.id));
+  const targetAdvs = checkedIds.length > 0 ? allAdvs.filter(a=>checkedIds.includes(a.id)) : allAdvs;
+
+  // Show user message
+  const userBubble = document.createElement('div');
+  userBubble.style.cssText = 'margin-top:16px;padding:14px 18px;background:rgba(0,0,0,.07);border-radius:14px;font-size:14px;color:#000;line-height:1.8;border-left:3px solid #000';
+  userBubble.innerHTML = `<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.5;display:block;margin-bottom:6px">你说</span>${userMsg}`;
+  arena.insertBefore(userBubble, followupArea);
+
+  document.getElementById('rt-followup-input').value = '';
+
+  const thinking = document.createElement('div');
+  thinking.className = 'rt-thinking';
+  thinking.innerHTML = '<div class="loading-wave"><span></span><span></span><span></span></div>导师们正在回应…';
+  arena.insertBefore(thinking, followupArea);
+  thinking.scrollIntoView({behavior:'smooth', block:'end'});
+
+  // Build structured history from result cards
+  const prevCards = arena.querySelectorAll('.rt-card');
+  let prevText = '';
+  prevCards.forEach(card => {
+    const name = card.querySelector('.rt-card-name')?.textContent || '';
+    const text = card.querySelector('.rt-card-text')?.textContent || '';
+    if (name && text) prevText += name + '说：' + text + '\n\n';
+  });
+  prevText = prevText.substring(0, 2000);
+
+  const results = await Promise.all(targetAdvs.map(async adv => {
+    const sys = `你就是${adv.name}本人。` + adv.system + `
+
+圆桌讨论话题："${q}"
+
+前面的讨论内容：
+${prevText}
+
+用户说："${userMsg}"
+
+用你自己的真实立场回应用户这句话。如果你骨子里认同，就大方说认同，但要加上你自己视角的延伸；如果你不认同，就直接用你自己的逻辑怼回去，不用客气；如果用户说的让你想到另一个人的观点值得反击，也可以顺带点名。要像真实的你在说话，有个性，有立场。不要用markdown格式。80字以内。`;
+    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:sys,messages:[{role:'user',content:'请回应。'}]})});
+    const data = await resp.json();
+    return {adv, text: data.content?.[0]?.text||''};
+  }));
+
+  thinking.remove();
+
+  const roundHdr = document.createElement('div');
+  roundHdr.className = 'rt-round-head';
+  roundHdr.innerHTML = '<div class="rt-round-title">导师回应</div><div class="rt-round-badge">你的观点</div><div class="rt-round-line"></div>';
+  arena.insertBefore(roundHdr, followupArea);
+
+  results.forEach(({adv,text},i)=>{
+    const card = document.createElement('div');
+    card.className = 'rt-card';
+    card.style.animationDelay = (i*0.08)+'s';
+    card.innerHTML = `<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>`;
+    arena.insertBefore(card, followupArea);
+  });
+
+  followupArea.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+async function rtWatchOnly(){
+  const q = document.getElementById('rt-question').value.trim();
+  const arena = document.getElementById('rt-arena');
+  const followupArea = document.getElementById('rt-followup-area');
+  followupArea.remove();
+
+  const thinking = document.createElement('div');
+  thinking.className = 'rt-thinking';
+  thinking.innerHTML = '<div class="loading-wave"><span></span><span></span><span></span></div>导师们继续讨论中…';
+  arena.appendChild(thinking);
+  thinking.scrollIntoView({behavior:'smooth', block:'end'});
+
+  const prevCards2 = arena.querySelectorAll('.rt-card');
+  let prevText = '';
+  prevCards2.forEach(card => {
+    const name = card.querySelector('.rt-card-name')?.textContent || '';
+    const text = card.querySelector('.rt-card-text')?.textContent || '';
+    if (name && text) prevText += name + '说：' + text + '\n\n';
+  });
+  prevText = prevText.substring(0, 2000);
+  const advs = ADVISORS.filter(a=>rtPicked.has(a.id));
+
+  const results = await Promise.all(advs.map(async adv => {
+    const sys = `你就是${adv.name}本人。` + adv.system + `
+
+圆桌讨论话题："${q}"
+
+前面的讨论内容：
+${prevText}
+
+讨论继续。你刚才听完了其他人说的话，现在轮到你。可以点名某人的观点直接接话，可以把自己的立场推进一步，也可以引入一个新的角度让讨论升级。要有存在感，要像真实的你会说的话。不要用markdown格式。80字以内。`;
+    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:sys,messages:[{role:'user',content:'请继续。'}]})});
+    const data = await resp.json();
+    return {adv, text: data.content?.[0]?.text||''};
+  }));
+
+  thinking.remove();
+
+  const roundHdr = document.createElement('div');
+  roundHdr.className = 'rt-round-head';
+  roundHdr.innerHTML = '<div class="rt-round-title">继续讨论</div><div class="rt-round-badge">观战模式</div><div class="rt-round-line"></div>';
+  arena.appendChild(roundHdr);
+
+  results.forEach(({adv,text},i)=>{
+    const card = document.createElement('div');
+    card.className = 'rt-card';
+    card.style.animationDelay = (i*0.08)+'s';
+    card.innerHTML = `<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>`;
+    arena.appendChild(card);
+  });
+
+  // Show options again
+  const actionRow = document.createElement('div');
+  actionRow.style.cssText = 'display:flex;gap:12px;margin-top:28px;flex-wrap:wrap';
+  actionRow.innerHTML = `
+    <button onclick="rtNewQuestion()" style="flex:1;min-width:160px;padding:14px 20px;background:transparent;border:2px solid var(--border2);border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">提问其他问题</button>
+    <button onclick="rtFightBack()" style="flex:1;min-width:160px;padding:14px 20px;background:#000;color:var(--lime);border:2px solid #000;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">我不服，接着吵 🔥</button>
+  `;
+  arena.appendChild(actionRow);
+  actionRow.scrollIntoView({behavior:'smooth', block:'end'});
+}
+
+
+const RT_QUESTIONS = {
+  money: [
+    '给你1000万，但必须和现在的伴侣永远断绝关系，你要吗？',
+    '给你一个机会，成功概率30%，但失败会归零，你赌不赌？',
+    '如果你年薪50万但工作极度痛苦，你会继续吗？',
+    '你可以保住自己的工作，但代价是同事被裁，你怎么选？',
+    '人一定要很多钱才能过得好吗？',
+    '买房和不买房哪个更幸福？',
+    '高学历女生做全职太太是浪费吗？',
+  ],
+  moral: [
+    '你可以一夜成名，但必须牺牲一个无辜的人，你会接受吗？',
+    '一列失控的电车即将撞死5个人，你可以拉杆改道撞死1个人，你会不会拉？',
+    '你知道一个朋友即将做错人生决定，但干预会毁掉你们关系，你说不说？',
+    '一个明显有罪的人逃脱了法律，你会不会私下制裁？',
+    '如果你是统治者，可以牺牲少数人换取整体繁荣，你会这么做吗？',
+    '为了社会稳定，可以限制一部分人的自由吗？',
+    '美术馆着火，救猫还是救画？如果不是猫，是仓鼠呢？',
+    '公众场合遇到熊孩子，要不要教育？',
+    '美国应不应该实现民间禁枪？',
+    '自由比安全更重要吗？',
+  ],
+  love: [
+    '你发现伴侣出轨，但对方说这是"唯一一次"，你原谅吗？',
+    '你可以让伴侣永远幸福，但她不会再爱你，你会接受吗？',
+    '你女朋友一分彩礼都不要，但她家人强烈反对，你怎么办？',
+    '你父母强烈反对你的人生选择，你会坚持还是妥协？',
+    '如果爱一个人让你变得更差，这段关系该不该继续？',
+    '你愿意被一个完美AI伴侣替代真实关系吗？',
+    '该不该看伴侣的手机？',
+    '现在谈恋爱和结婚到底要不要AA制？',
+    '爱上好朋友的恋人，要不要追求？',
+    '坚持追求真爱是不是理智的行为？',
+    '飞机失事，要不要叫醒旁边睡着的爱人？',
+    '要不要说服父母去养老院？',
+  ],
+  self: [
+    '如果可以删除所有痛苦记忆，你还是现在的你吗？',
+    '你更想成为"真实的自己"，还是"更成功的自己"？',
+    '如果你的人格可以被优化，你愿意改变吗？',
+    '人的选择到底是自由的，还是早就被决定好的？',
+    '情绪稳定真的能让生活更幸福吗？',
+  ],
+  ai: [
+    '如果AI比人类更适合做决策，人类应该让权吗？',
+    'AI可以完美管理社会，但人类会失去自由，你接受吗？',
+    '如果AI可以复制你的意识，你还算独一无二吗？',
+    '你愿意被一个完美AI伴侣替代真实关系吗？',
+  ],
+};
+
+let rtCurrentCat = 'money';
+
+function rtShowCat(cat) {
+  rtCurrentCat = cat;
+  document.querySelectorAll('.rt-cat-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+  const bank = document.getElementById('rt-qbank');
+  if (!bank) return;
+  bank.innerHTML = (RT_QUESTIONS[cat] || []).map(q =>
+    `<button class="rt-q-chip" onclick="rtPickQ(this.textContent)">${q}</button>`
+  ).join('');
+}
+
+function rtPickQ(q) {
+  const ta = document.getElementById('rt-question');
+  if (ta) { ta.value = q; ta.focus(); }
+}
+function init(){
+  renderAdvisors();
+}
+
+function showPage(name){
+  document.getElementById('page-main').style.display=name==='main'?'block':'none';
+  document.getElementById('page-rt').style.display=name==='rt'?'block':'none';
+  if(name==='rt') rtInit();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+
+function rtInit(){
+  rtRenderAdvisors();
+  rtShowCat('money');
+}
+
+function init(){
+  renderAdvisors();
+}
+init();
+
+// ── ANALYTICS TRACKING ──
+const _sessionStart = Date.now();
+
+// Track session duration on page leave
+window.addEventListener('beforeunload', function() {
+  const duration = Math.round((Date.now() - _sessionStart) / 1000);
+  if (duration > 3) {
+    navigator.sendBeacon('/api/track', JSON.stringify({ event: 'session_end', duration }));
+  }
+});
+
+function trackAdvisorUse() {
+  fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event: 'advisor_use' }) }).catch(() => {});
+}
+
+function trackRoundtableUse() {
+  fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event: 'roundtable_use' }) }).catch(() => {});
+}
+
+</script>
+</div>
+
+<div id="page-rt" style="display:none">
+  <div class="nav">
+    <div class="nav-logo">导师圆桌派</div>
+    <button onclick="showPage('main')" style="font-size:12px;font-weight:600;color:var(--muted);background:transparent;border:1.5px solid var(--border);border-radius:100px;padding:6px 14px;cursor:pointer">人生导师召唤术</button>
+  </div>
+  <div class="wrap">
+    <div style="padding:52px 0 36px;border-bottom:1.5px solid var(--border);margin-bottom:40px">
+      <div class="section-label">圆桌辩论</div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,88px);font-weight:400;line-height:.92;color:#000;margin-bottom:14px">让导师们<br>开始吵</h2>
+      <p style="font-size:15px;color:var(--muted);line-height:1.75;max-width:480px">选 2-4 位导师，提出一个问题。第一轮各自亮相，第二轮起互相接话反驳。</p>
+    </div>
+    <div style="margin-bottom:36px">
+      <div class="section-label">提出你的问题</div>
+
+      <!-- Question bank -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <button onclick="rtShowCat('money')" class="rt-cat-btn active" data-cat="money">💰 金钱与代价</button>
+          <button onclick="rtShowCat('moral')" class="rt-cat-btn" data-cat="moral">⚖️ 道德困境</button>
+          <button onclick="rtShowCat('love')" class="rt-cat-btn" data-cat="love">❤️ 爱情关系</button>
+          <button onclick="rtShowCat('self')" class="rt-cat-btn" data-cat="self">🪞 自我与身份</button>
+          <button onclick="rtShowCat('ai')" class="rt-cat-btn" data-cat="ai">🤖 AI与未来</button>
+        </div>
+        <div id="rt-qbank" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+
+      <div style="background:var(--card2);border:1.5px solid var(--border);border-radius:18px;overflow:hidden">
+        <textarea id="rt-question" placeholder="点击上方问题，或直接输入你的问题…" style="width:100%;min-height:110px;background:transparent;border:none;padding:18px 20px;font-size:15px;color:#000;line-height:1.8;resize:none;outline:none;font-family:'DM Sans',sans-serif"></textarea>
+        <div style="padding:10px 20px;background:rgba(0,0,0,.03);border-top:1.5px solid var(--border);font-size:11px;color:var(--dim)">话题越尖锐，battle 越好看</div>
+      </div>
+    </div>
+    <div class="advisors-section">
+      <div class="section-label">选择参战导师（2-4位）</div>
+      <div class="advisors-grid" id="rt-adv-grid"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px">已选 <span id="rt-sel-ct" style="color:#000;font-weight:700">0</span> / 4 位</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;margin:28px 0;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="section-label" style="margin-bottom:0">轮数</span>
+        <div style="display:flex;gap:6px">
+          <button class="rt-rbtn on" data-r="3" onclick="rtSetR(3)">3轮</button>
+          <button class="rt-rbtn" data-r="4" onclick="rtSetR(4)">4轮</button>
+          <button class="rt-rbtn" data-r="5" onclick="rtSetR(5)">5轮</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="rt-v-check" checked style="width:15px;height:15px;accent-color:#000"/>
+        <label for="rt-v-check" style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">最后出裁决</label>
+      </div>
+    </div>
+    <button class="btn-black ask-btn" id="rt-go-btn" onclick="rtGo()" style="margin-bottom:44px">
+      <span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        开始圆桌
+      </span>
+    </button>
+    <div id="rt-arena"></div>
+    <div class="divider"></div>
+    <footer>导师观点由 AI 生成，仅供参考</footer>
+  </div>
+</div>
+
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
