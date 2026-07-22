@@ -569,6 +569,21 @@ footer{text-align:center;font-size:11px;color:var(--dim);
 .pm-fav-btn:hover,.pm-fav-btn.on{background:#000;color:var(--lime);border-color:#000}
 .pm-qa-arrow{font-size:11px;color:var(--muted);padding-top:2px;transition:transform .2s}
 .pm-qa-answer{display:none;padding:12px 14px;font-size:13px;line-height:1.85;color:rgba(0,0,0,.7);border-top:1px solid var(--border);background:var(--card)}
+/* 决策轨迹 */
+.pm-revisit{background:rgba(0,0,0,.05);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.pm-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px}
+.pm-status.pending{background:rgba(0,0,0,.06);color:var(--muted)}
+.pm-status.decided{background:#000;color:var(--lime)}
+.pm-status.done{background:var(--lime);color:#000}
+.pm-track{padding:11px 14px;border-top:1px dashed var(--border);background:rgba(0,0,0,.015)}
+.pm-track-box{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.pm-track-row{display:flex;align-items:baseline;gap:8px;font-size:13px;line-height:1.55;width:100%}
+.pm-track-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);white-space:nowrap;padding-top:2px}
+.pm-track-val{flex:1;color:#000}
+.pm-mini-btn{font-size:12px;font-weight:700;padding:6px 14px;border-radius:100px;border:1.5px solid var(--border2);background:transparent;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.pm-mini-btn:hover{border-color:#000}
+.pm-mini-btn.dark{background:#000;color:var(--lime);border-color:#000}
+.pm-track-input{width:100%;min-height:60px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;resize:none;outline:none;background:#fff;color:#000;box-sizing:border-box}
 
 /* logout */
 .pm-logout-btn{width:100%;padding:13px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .2s}
@@ -1256,19 +1271,87 @@ async function pmRenderCredits() {
     <div class="pm-section"><button class="pm-logout-btn" onclick="doLogout()">退出登录</button></div>`;
 }
 
+function pmEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 async function pmRenderHistory() {
-  const data = await supaFetch(`qa_history?user_id=eq.${currentUser.id}&select=id,question,answer,mode,mentor_name,cost,is_favorited,created_at&order=created_at.desc&limit=30`);
+  const data = await supaFetch(`qa_history?user_id=eq.${currentUser.id}&select=*&order=created_at.desc&limit=50`);
   const body = document.getElementById('pm-body');
-  if (!data?.length) { body.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">还没有历史记录<br><span style="font-size:12px">召唤导师后会自动保存</span></div>'; return; }
-  body.innerHTML='<div class="pm-section">'+(data||[]).map(q=>`
-    <div class="pm-qa-item">
-      <div class="pm-qa-header" onclick="pmToggleQA(this)">
-        <div style="flex:1"><div class="pm-qa-q">${q.question.length>90?q.question.substring(0,90)+'…':q.question}</div>
-          <div class="pm-qa-meta"><span>${pmTimeAgo(q.created_at)}</span><span>${q.mentor_name||q.mode}</span><span>-${q.cost} 慧根值</span></div></div>
-        <div class="pm-qa-actions">
-          <button class="pm-fav-btn ${q.is_favorited?'on':''}" onclick="event.stopPropagation();toggleFavorite('${q.id}',this)">${q.is_favorited?'★ 已收藏':'☆ 收藏'}</button>
-          <span class="pm-qa-arrow">▼</span></div></div>
-      <div class="pm-qa-answer">${q.answer.replace(/\n/g,'<br>')}</div></div>`).join('')+'</div>';
+  if (!data?.length) { body.innerHTML='<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">还没有决策记录<br><span style="font-size:12px">召唤导师后会自动存进你的轨迹</span></div>'; return; }
+  window._pmHistory = data;
+  const total = data.length;
+  const decided = data.filter(q=>q.decision && String(q.decision).trim()).length;
+  const now = Date.now();
+  // 回访：14 天前、已写决定、还没写后续的最早一条
+  const revisit = data.slice().reverse().find(q=> q.decision && String(q.decision).trim() && !(q.outcome && String(q.outcome).trim()) && (now-new Date(q.created_at).getTime())/86400000 >= 14);
+  let html = `<div class="pm-section">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px">你一共问过 <b style="color:#000">${total}</b> 个难题，做了 <b style="color:#000">${decided}</b> 个决定</div>`;
+  if (revisit) {
+    const d = Math.floor((now-new Date(revisit.created_at).getTime())/86400000);
+    html += `<div class="pm-revisit">
+      <div style="font-size:12px;font-weight:700;color:#000;margin-bottom:4px">⏰ ${d} 天前你决定：</div>
+      <div style="font-size:13px;color:#000;margin-bottom:8px">「${pmEsc(revisit.decision)}」</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">现在回头看，结果怎样了？</div>
+      <button class="pm-mini-btn dark" onclick="pmEditField('${revisit.id}','outcome')">写下后续 ›</button></div>`;
+  }
+  html += data.map(q=>pmQaItem(q)).join('') + '</div>';
+  body.innerHTML = html;
+}
+
+function pmQaItem(q){
+  const hasDec = q.decision && String(q.decision).trim();
+  const hasOut = q.outcome && String(q.outcome).trim();
+  const status = hasOut ? '<span class="pm-status done">已回访</span>' : hasDec ? '<span class="pm-status decided">已决定</span>' : '<span class="pm-status pending">待记录</span>';
+  return `<div class="pm-qa-item" id="qa-${q.id}">
+    <div class="pm-qa-header" onclick="pmToggleQA(this)">
+      <div style="flex:1"><div class="pm-qa-q">${pmEsc(q.question.length>90?q.question.substring(0,90)+'…':q.question)}</div>
+        <div class="pm-qa-meta"><span>${pmTimeAgo(q.created_at)}</span><span>${pmEsc(q.mentor_name||q.mode)}</span>${status}</div></div>
+      <div class="pm-qa-actions">
+        <button class="pm-fav-btn ${q.is_favorited?'on':''}" onclick="event.stopPropagation();toggleFavorite('${q.id}',this)">${q.is_favorited?'★ 已收藏':'☆ 收藏'}</button>
+        <span class="pm-qa-arrow">▼</span></div></div>
+    <div class="pm-qa-answer">${(q.answer||'').replace(/\n/g,'<br>')}</div>
+    <div class="pm-track" id="track-${q.id}">${pmTrack(q)}</div></div>`;
+}
+
+function pmTrack(q){
+  const dec = q.decision && String(q.decision).trim();
+  const out = q.outcome && String(q.outcome).trim();
+  let h = '<div class="pm-track-box">';
+  h += dec
+    ? `<div class="pm-track-row"><span class="pm-track-label">我的决定</span><span class="pm-track-val">${pmEsc(q.decision)}</span><button class="pm-mini-btn" onclick="pmEditField('${q.id}','decision')">改</button></div>`
+    : `<button class="pm-mini-btn dark" onclick="pmEditField('${q.id}','decision')">＋ 记录我的决定</button>`;
+  if (dec) {
+    h += out
+      ? `<div class="pm-track-row"><span class="pm-track-label">后续结果</span><span class="pm-track-val">${pmEsc(q.outcome)}</span><button class="pm-mini-btn" onclick="pmEditField('${q.id}','outcome')">改</button></div>`
+      : `<button class="pm-mini-btn" onclick="pmEditField('${q.id}','outcome')">＋ 写下后续结果</button>`;
+  }
+  return h + '</div>';
+}
+
+function pmEditField(qaId, field){
+  const q = (window._pmHistory||[]).find(x=>String(x.id)===String(qaId));
+  const cur = q ? (q[field]||'') : '';
+  const box = document.getElementById('track-'+qaId);
+  if(!box) return;
+  const label = field==='decision' ? '你最后的决定是？' : '现在回头看，结果怎样了？';
+  box.innerHTML = `<div class="pm-track-box" style="width:100%">
+    <div style="font-size:11px;color:var(--muted)">${label}</div>
+    <textarea id="edit-${qaId}-${field}" class="pm-track-input" placeholder="一句话就够">${pmEsc(cur)}</textarea>
+    <div style="display:flex;gap:8px">
+      <button class="pm-mini-btn dark" onclick="pmSaveField('${qaId}','${field}')">保存</button>
+      <button class="pm-mini-btn" onclick="pmRenderHistory()">取消</button></div></div>`;
+  const ta=document.getElementById(`edit-${qaId}-${field}`); if(ta) ta.focus();
+}
+
+async function pmSaveField(qaId, field){
+  const ta = document.getElementById(`edit-${qaId}-${field}`);
+  if(!ta) return;
+  const val = ta.value.trim();
+  try {
+    await supaFetch(`qa_history?id=eq.${qaId}`, { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({ [field]: val }) });
+    const q=(window._pmHistory||[]).find(x=>String(x.id)===String(qaId)); if(q) q[field]=val;
+    showToast(field==='decision'?'已记录你的决定 ✅':'已记录后续 ✅');
+    pmRenderHistory();
+  } catch(e){ showToast('保存失败，请检查数据库字段'); }
 }
 
 async function pmRenderFavorites() {
@@ -3594,7 +3677,7 @@ async function cfEndConflict(){
     <!-- Tabs -->
     <div class="pm-tabs">
       <button class="pm-tab active" onclick="pmSwitchTab('credits',this)">✦ 慧根值</button>
-      <button class="pm-tab" onclick="pmSwitchTab('history',this)">历史问答</button>
+      <button class="pm-tab" onclick="pmSwitchTab('history',this)">决策轨迹</button>
       <button class="pm-tab" onclick="pmSwitchTab('favorites',this)">我的收藏</button>
       <button class="pm-tab" onclick="pmSwitchTab('wishes',this)">许愿池 ✨</button>
     </div>
