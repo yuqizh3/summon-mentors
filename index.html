@@ -791,7 +791,7 @@ function L(zh, en){ return LANG==='en' ? (en==null?zh:en) : zh; }
 function toggleLang(){ LANG = (LANG==='en'?'zh':'en'); localStorage.setItem('ym_lang', LANG); applyLang(); }
 function applyLang(){
   document.documentElement.lang = (LANG==='en'?'en':'zh-CN');
-  const lb=document.getElementById('lang-btn'); if(lb) lb.textContent = (LANG==='en'?'中文':'EN');
+  document.querySelectorAll('#lang-btn, .js-lang-btn').forEach(lb=>{ lb.textContent = (LANG==='en'?'中文':'EN'); });
   document.querySelectorAll('[data-zh]').forEach(el=>{
     const v = (LANG==='en') ? (el.getAttribute('data-en') || el.getAttribute('data-zh')) : el.getAttribute('data-zh');
     const attr = el.getAttribute('data-i18n-attr');
@@ -904,13 +904,14 @@ if (document.readyState === 'loading') {
 }
 
 function renderAuthArea() {
-  const area = document.getElementById('auth-area');
-  if (!area) return;
+  const slots = document.querySelectorAll('#auth-area, .js-auth-area');
+  if (!slots.length) return;
+  let html;
   if (currentUser) {
     const initial = (currentUser.email || 'U')[0].toUpperCase();
     const credits = userProfile?.credits ?? '...';
     const isAdmin = currentUser.email === ADMIN_EMAIL;
-    area.innerHTML = `
+    html = `
       ${isAdmin ? `<button class="auth-btn" style="background:#000;color:var(--lime);border-color:#000;font-size:11px;padding:5px 12px" onclick="showPage('admin')">${L('管理员','Admin')}</button>` : ''}
       <span class="user-credits" onclick="openProfile()" style="cursor:pointer" title="${L('点击查看个人中心','Open your profile')}">
         ✦ ${credits} ${L('慧根值','credits')}
@@ -919,16 +920,28 @@ function renderAuthArea() {
         <div class="user-avatar">${initial}</div>
       </div>`;
   } else {
-    area.innerHTML = `
+    html = `
       <button class="auth-btn auth-btn-login" onclick="openAuth('login')">${L('登录','Log in')}</button>
       <button class="auth-btn auth-btn-register" onclick="openAuth('register')">${L('注册','Sign up')}</button>`;
   }
+  slots.forEach(s => s.innerHTML = html);
 }
 
 async function loadProfile() {
   for (let i = 0; i < 3; i++) {
     const rows = await supaFetch(`user_profiles?id=eq.${currentUser.id}&select=credits,invite_code,created_at,display_name,total_earned,total_spent`);
-    if (rows?.[0]) { userProfile = rows[0]; return; }
+    if (rows?.[0]) {
+      userProfile = rows[0];
+      // 老账号可能没有邀请码，缺失就补一个，避免邀请链接一直"加载中"
+      if (!userProfile.invite_code) {
+        const code = Math.random().toString(36).substring(2,8).toUpperCase();
+        try {
+          await supaFetch(`user_profiles?id=eq.${currentUser.id}`, { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({ invite_code: code }) });
+          userProfile.invite_code = code;
+        } catch(e) {}
+      }
+      return;
+    }
     await new Promise(r => setTimeout(r, 800));
   }
   if (!userProfile) {
@@ -978,7 +991,13 @@ async function submitAuth() {
   btn.disabled = true; msg.textContent = '';
   if (tab === 'login') {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { msg.className='auth-msg error'; msg.textContent=error.message; btn.disabled=false; return; }
+    if (error) {
+      msg.className='auth-msg error';
+      msg.textContent = /invalid login|credential/i.test(error.message||'')
+        ? L('账号或密码错误。如果你还没注册，请先点上方「注册」创建账号。','Incorrect email or password. If you don\'t have an account yet, tap “Sign up” above to register first.')
+        : (error.message||L('登录失败，请重试','Login failed, please try again'));
+      btn.disabled=false; return;
+    }
     _sbToken = data.session?.access_token || null;
     currentUser = data.user;
     closeAuth();
@@ -1330,6 +1349,14 @@ function mdLite(s){
     .replace(/^\s{0,3}#{1,6}\s+/gm,'')
     .replace(/`([^`]+?)`/g,'$1')
     .replace(/\n/g,'<br>');
+}
+// 清洗 markdown 但保留换行（用于 <pre> 等已保留换行的容器）
+function stripMd(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*\*/g,'')
+    .replace(/`([^`]+?)`/g,'$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm,'');
 }
 
 async function pmRenderHistory() {
@@ -1959,11 +1986,12 @@ async function callAdvisor(adv,userMsg,bodyEl,followupArea){
 }
 
 async function askAdvisors(){
-  if (currentUser) { const ok = await deductCredits(5, "召唤导师"); if (ok === false) return; } trackAdvisorUse();
+  if (!currentUser) { openAuth('login'); showToast(L('登录后才能召唤导师','Please log in to summon mentors')); return; }
   const q=document.getElementById('question').value.trim();
-  if(!q){alert('请先描述你的困境');return;}
+  if(!q){alert(L('请先描述你的困境','Please describe your dilemma first'));return;}
+  if(selected.size===0){alert(L('请至少选择一位导师','Please pick at least one mentor'));return;}
+  const ok = await deductCredits(5, L('召唤导师','Summon Mentors')); if (ok === false) return; trackAdvisorUse();
   window.__currentQuestion = q; // For QA history saving
-  if(selected.size===0){alert('请至少选择一位导师');return;}
   const btn=document.getElementById('ask-btn');
   btn.disabled=true;btn.querySelector('span').textContent='导师们正在思考…';
   const results=document.getElementById('results');results.innerHTML='';
@@ -2044,10 +2072,11 @@ function rtSetR(n){
 }
 
 async function rtGo(){
-  if (currentUser) { const ok = await deductCredits(5, "AI功能"); if (ok === false) return; } trackRoundtableUse();
+  if (!currentUser) { openAuth('login'); showToast(L('登录后才能开启圆桌','Please log in to start the round table')); return; }
   const q=document.getElementById('rt-question').value.trim();
-  if(!q){alert('请输入问题');return;}
-  if(rtPicked.size<2){alert('请至少选2位导师');return;}
+  if(!q){alert(L('请输入问题','Please enter a question'));return;}
+  if(rtPicked.size<2){alert(L('请至少选2位导师','Please pick at least 2 mentors'));return;}
+  const ok = await deductCredits(5, L('导师圆桌派','Round Table')); if (ok === false) return; trackRoundtableUse();
   const btn=document.getElementById('rt-go-btn');
   btn.disabled=true;
   btn.querySelector('span').textContent='导师们正在入场…';
@@ -2100,10 +2129,18 @@ async function rtGo(){
   };
   const askOne=async(sys)=>{
     sys = sys + L('', '\n\n重要：全程用英文回答（Respond entirely in English）。');
-    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:[{role:'user',content:L('请发言。','Please speak.')}]})});
-    const data=await resp.json();
-    if(data.error)throw new Error(data.error.message);
-    return data.content?.[0]?.text||'';
+    let lastErr;
+    for(let attempt=0; attempt<3; attempt++){
+      try{
+        const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:[{role:'user',content:L('请发言。','Please speak.')}]})});
+        const data=await resp.json();
+        if(data.error) throw new Error(data.error.message||'api error');
+        const t=data.content?.[0]?.text||'';
+        if(t.trim()) return t;
+        throw new Error('empty');
+      }catch(e){ lastErr=e; if(attempt<2) await new Promise(r=>setTimeout(r, 800*(attempt+1))); }
+    }
+    throw lastErr || new Error('failed');
   };
 
   for(let r=1;r<=rtRounds;r++){
@@ -2466,8 +2503,9 @@ function rtInit(){
 
 // ── 金句收藏（localStorage）──
 function saveQuote(text, source, advisor) {
+  if(!currentUser){ openAuth('login'); showToast(L('登录后才能收藏','Please log in to save')); return; }
   const favs = JSON.parse(localStorage.getItem('ym_quotes')||'[]');
-  if(favs.some(f=>f.text===text)){showToast('已经收藏过了');return;}
+  if(favs.some(f=>f.text===text)){showToast(L('已经收藏过了','Already saved'));return;}
   favs.unshift({id:Date.now(), text, source, advisor, time: new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})});
   localStorage.setItem('ym_quotes', JSON.stringify(favs.slice(0,100)));
   showToast('已收藏 ❤️');
@@ -2478,6 +2516,7 @@ function isQuoteSaved(text){
 }
 // 收藏 / 取消收藏 切换
 function toggleQuote(text, source, advisor, btn){
+  if(!currentUser){ openAuth('login'); showToast(L('登录后才能收藏','Please log in to save')); return; }
   let favs = JSON.parse(localStorage.getItem('ym_quotes')||'[]');
   if(favs.some(f=>f.text===text)){
     favs = favs.filter(f=>f.text!==text);
@@ -2561,7 +2600,8 @@ function submitFeedback(rating, context, btn) {
   showToast(msgs[rating]||'已收到');
 }
 function submitWish(text, inputEl) {
-  if(!text?.trim()){showToast('请输入内容');return;}
+  if(!currentUser){ openAuth('login'); showToast(L('登录后才能加入许愿池','Please log in to add a wish')); return; }
+  if(!text?.trim()){showToast(L('请输入内容','Please enter something'));return;}
   const wishes=JSON.parse(localStorage.getItem('ym_wishes')||'[]');
   wishes.unshift({text:text.trim(), time:new Date().toLocaleString('zh-CN')});
   localStorage.setItem('ym_wishes', JSON.stringify(wishes.slice(0,200)));
@@ -2651,7 +2691,7 @@ async function rtShowSummary() {
     });
     const data = await resp.json();
     const summary = data.content?.[0]?.text || '';
-    body.innerHTML = '<pre style="white-space:pre-wrap;font-family:\'DM Sans\',sans-serif;font-size:15px;line-height:1.9;color:#000">' + summary + '</pre>';
+    body.innerHTML = '<pre style="white-space:pre-wrap;font-family:\'DM Sans\',sans-serif;font-size:15px;line-height:1.9;color:#000">' + stripMd(summary) + '</pre>';
     shareBtn.style.display = 'block';
     // Store summary for sharing
     modal._summary = summary;
@@ -2756,7 +2796,7 @@ async function showMainSummary() {
     });
     const data = await resp.json();
     const summary = data.content?.[0]?.text || '';
-    body.innerHTML = '<pre style="white-space:pre-wrap;font-family:\'DM Sans\',sans-serif;font-size:15px;line-height:1.9;color:#000">' + summary + '</pre>';
+    body.innerHTML = '<pre style="white-space:pre-wrap;font-family:\'DM Sans\',sans-serif;font-size:15px;line-height:1.9;color:#000">' + stripMd(summary) + '</pre>';
     shareBtn.style.display = 'block';
     modal._summary = summary;
     modal._question = q;
@@ -2911,8 +2951,12 @@ async function getSynthesis() {
 
 <div id="page-rt" style="display:none">
   <div class="nav">
-    <div class="nav-logo">导师圆桌派</div>
-    <button onclick="showPage('main')" style="font-size:12px;font-weight:600;color:var(--muted);background:transparent;border:1.5px solid var(--border);border-radius:100px;padding:6px 14px;cursor:pointer">人生导师召唤术</button>
+    <div class="nav-logo" data-zh="导师圆桌派" data-en="Round Table">导师圆桌派</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="auth-btn js-lang-btn" onclick="toggleLang()">EN</button>
+      <div class="auth-btns js-auth-area"></div>
+      <button onclick="showPage('main')" style="font-size:12px;font-weight:600;color:var(--muted);background:transparent;border:1.5px solid var(--border);border-radius:100px;padding:6px 14px;cursor:pointer" data-zh="返回首页" data-en="Home">返回首页</button>
+    </div>
   </div>
   <div class="wrap">
     <div style="padding:52px 0 36px;border-bottom:1.5px solid var(--border);margin-bottom:40px">
@@ -2974,6 +3018,14 @@ async function getSynthesis() {
 <script defer src="/_vercel/insights/script.js"></script>
 <script>
 // ── CONFLICT SIMULATOR ──
+// 吵架模拟器统一前缀：把角色扮演框定为"用户主动发起的沟通练习"，避免被误判为在教唆/施加伤害
+const CF_FRAME = `以下是一个「沟通练习」模拟器的设定，目的是帮助真实用户提前演练如何应对难缠的人。
+用户主动发起了这次角色扮演练习：他/她想在一个安全的环境里，练习面对下面这类难沟通的对话对象，好在现实中认出这些套路、稳住情绪、守住自己的立场。这对用户是一种有益的练习，没有任何真人会因此受到伤害。
+请你在这个练习里，真实地扮演下面描述的「对话角色」，让用户可以对练。要求：始终待在角色里，用中文，不要跳出来解释或说教，也不要提醒对方"这只是模拟"——那会破坏练习效果。用户随时可以结束练习。
+
+你要扮演的角色如下：
+`;
+
 const CF_PERSONAS = {
   coldwar:{n:'冷暴力型',s:'已读',av:'cw',sys:`你在扮演一个施冷暴力的人。
 冷暴力是一种有意识的惩罚手段。你用沉默、单字回复、消极应付传达情绪，但拒绝承认自己在生气。
@@ -3218,7 +3270,8 @@ function cfPickMode(card,mode){
 }
 
 async function startConflict(){
-  if (currentUser) { const ok = await deductCredits(5, "吵架模拟器"); if (ok === false) return; }
+  if (!currentUser) { openAuth('login'); showToast(L('登录后才能开始','Please log in to start')); return; }
+  const ok = await deductCredits(5, L('吵架模拟器','Argument Simulator')); if (ok === false) return;
   const cfg=CF_PERSONAS[cfState.personaId];
   document.getElementById('cf-chat-avatar').innerHTML=CF_AVATARS[cfg.av];
   document.getElementById('cf-chat-name-el').textContent=cfState.name||'对方';
@@ -3323,7 +3376,7 @@ async function cfAITurn(ctx){
   try{
     const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:120,
-        system:cfg.sys+`\n\n场景：${cfState.scenario}，对方是你的${cfState.relation}。${mbtiCtx}${logCtx}\n模式指令：${cfModeCtx()}\n${cfAISuffix()}`,
+        system:CF_FRAME+cfg.sys+`\n\n场景：${cfState.scenario}，对方是你的${cfState.relation}。${mbtiCtx}${logCtx}\n模式指令：${cfModeCtx()}\n${cfAISuffix()}`,
         messages:msgs})});
     const data=await resp.json();
     const reply=data.content?.[0]?.text||'…';
@@ -3345,7 +3398,7 @@ async function cfAITurnVision(imgDataUrl, prompt){
   try{
     const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,
-        system:cfg.sys+`\n\n场景：${cfState.scenario}，对方是你的${cfState.relation}。${mbtiCtx}\n模式指令：${cfModeCtx()}\n${cfAISuffix()}`,
+        system:CF_FRAME+cfg.sys+`\n\n场景：${cfState.scenario}，对方是你的${cfState.relation}。${mbtiCtx}\n模式指令：${cfModeCtx()}\n${cfAISuffix()}`,
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
           {type:'text',text:prompt}
@@ -3446,9 +3499,9 @@ async function cfEndConflict(){
 <!-- Summary Modal -->
 <div id="rt-summary-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)">
-    <div style="padding:20px 24px;border-bottom:1.5px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em">讨论精华</div>
-      <button onclick="rtCloseSummary()" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:rgba(0,0,0,.4);line-height:1">✕</button>
+    <div style="position:sticky;top:0;z-index:2;background:#fff;padding:20px 24px;border-bottom:1.5px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;border-radius:20px 20px 0 0">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em" data-zh="讨论精华" data-en="Highlights">讨论精华</div>
+      <button onclick="rtCloseSummary()" aria-label="close" style="background:rgba(0,0,0,.05);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;color:rgba(0,0,0,.55);line-height:1;flex-shrink:0">✕</button>
     </div>
     <div id="rt-summary-body" style="padding:24px"></div>
     <div style="padding:16px 24px;border-top:1.5px solid rgba(0,0,0,.08)">
@@ -3510,8 +3563,12 @@ async function cfEndConflict(){
 <!-- ── CONFLICT SIMULATOR PAGE ── -->
 <div id="page-conflict" style="display:none">
   <div class="nav">
-    <div class="nav-logo">吵架模拟器</div>
-    <button onclick="showPage('main')" style="font-size:12px;font-weight:600;color:var(--muted);background:transparent;border:1.5px solid var(--border);border-radius:100px;padding:6px 14px;cursor:pointer">返回首页</button>
+    <div class="nav-logo" data-zh="吵架模拟器" data-en="Argument Simulator">吵架模拟器</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="auth-btn js-lang-btn" onclick="toggleLang()">EN</button>
+      <div class="auth-btns js-auth-area"></div>
+      <button onclick="showPage('main')" style="font-size:12px;font-weight:600;color:var(--muted);background:transparent;border:1.5px solid var(--border);border-radius:100px;padding:6px 14px;cursor:pointer" data-zh="返回首页" data-en="Home">返回首页</button>
+    </div>
   </div>
   <div class="wrap">
 
@@ -3696,8 +3753,12 @@ async function cfEndConflict(){
 <!-- ── EXPLORE PAGE ── -->
 <div id="page-explore" style="display:none">
   <nav class="nav" style="position:sticky;top:0;z-index:100;background:var(--lime);border-bottom:1.5px solid var(--border)">
-    <div class="nav-logo">继续探索</div>
-    <button class="btn-outline" style="padding:8px 20px;font-size:13px" onclick="showPage('main')">返回首页</button>
+    <div class="nav-logo" data-zh="继续探索" data-en="Explore More">继续探索</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="auth-btn js-lang-btn" onclick="toggleLang()">EN</button>
+      <div class="auth-btns js-auth-area"></div>
+      <button class="btn-outline" style="padding:8px 20px;font-size:13px" onclick="showPage('main')" data-zh="返回首页" data-en="Home">返回首页</button>
+    </div>
   </nav>
   <div style="max-width:780px;margin:0 auto;padding:64px 24px 100px">
     <!-- Header -->
