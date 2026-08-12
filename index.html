@@ -785,6 +785,55 @@ let currentUser = null;
 let userProfile = null;
 let _sbToken = null;
 
+// ── 中英文切换 i18n ──
+let LANG = (localStorage.getItem('ym_lang')==='en') ? 'en' : 'zh';
+function L(zh, en){ return LANG==='en' ? (en==null?zh:en) : zh; }
+function toggleLang(){ LANG = (LANG==='en'?'zh':'en'); localStorage.setItem('ym_lang', LANG); applyLang(); }
+function applyLang(){
+  document.documentElement.lang = (LANG==='en'?'en':'zh-CN');
+  const lb=document.getElementById('lang-btn'); if(lb) lb.textContent = (LANG==='en'?'中文':'EN');
+  document.querySelectorAll('[data-zh]').forEach(el=>{
+    const v = (LANG==='en') ? (el.getAttribute('data-en') || el.getAttribute('data-zh')) : el.getAttribute('data-zh');
+    const attr = el.getAttribute('data-i18n-attr');
+    if(attr) el.setAttribute(attr, v);
+    else if(el.hasAttribute('data-html')) el.innerHTML = v;
+    else el.textContent = v;
+  });
+  try{ renderAdvisors(); }catch(e){}
+  try{ if(document.getElementById('rt-adv-grid')) rtRenderAdvisors(); }catch(e){}
+  try{ renderAuthArea(); }catch(e){}
+}
+// 导师英文名 & 标签（Phase 1：身份介绍长文暂不翻译）
+const ADV_I18N = {
+  marx:{name:'Marx',tag:'Structure · Contradiction · Leverage'},
+  mao:{name:'Mao Zedong',tag:'On Contradiction · On Practice'},
+  ququ:{name:'Ququ',tag:'Value game · Self-worth · No settling'},
+  stoic:{name:'The Stoics',tag:'Dichotomy of control · Inner peace'},
+  confucius:{name:'Confucius',tag:'Virtue · Self-cultivation'},
+  nietzsche:{name:'Nietzsche',tag:'Will to power · Self-overcoming'},
+  buddha:{name:'The Buddha',tag:'Letting go · The Middle Way'},
+  sun:{name:'Sun Tzu',tag:'Know self & foe · Strategy first'},
+  heyi:{name:'Big Sister Yi',tag:'Market instinct · Contrarian bets'},
+  sun2:{name:'Brother Sun',tag:'Hype · Storytelling · Always on stage'},
+  god:{name:'Jesus',tag:'Compassion · What you truly fear'},
+  laozi:{name:'Laozi',tag:'Wu wei · The way of nature'},
+  trump:{name:'Trump',tag:'Deal-making · Extreme anchoring · Win or lose'},
+  wanghuilin:{name:'Wang Huiling',tag:'Working-class women · Refuse taming'},
+  caocao:{name:'Cao Cao',tag:'Warlord · Ruthless pragmatism · Merit first'},
+  qinshihuang:{name:'Qin Shi Huang',tag:'Unification · Absolute order'},
+  musk:{name:'Musk',tag:'First principles · Civilizational goals'},
+  adler:{name:'Adler',tag:'Teleology · Task separation · Courage to be disliked'},
+  plato:{name:'Plato',tag:'World of forms · Justice · Philosopher-king'},
+  kid:{name:'A 5-year-old',tag:'Why · Why · Why'},
+  dog:{name:'Doggo',tag:'Unconditional · The present · Nose-first'},
+  michelangelo:{name:'Michelangelo',tag:'Sublime beauty · Pain & creation'},
+  xuedi:{name:'The Snow Queen',tag:'No-contact · Energy · The neediness game'},
+  jung:{name:'Jung',tag:'Collective unconscious · Shadow · Individuation'},
+  freud:{name:'Freud',tag:'The unconscious · Id/Ego/Superego · Childhood'},
+};
+function advName(a){ return L(a.name, (ADV_I18N[a.id]&&ADV_I18N[a.id].name)||a.name); }
+function advTag(a){ return L(a.tag, (ADV_I18N[a.id]&&ADV_I18N[a.id].tag)||a.tag); }
+
 // Detect OAuth callback before anything else runs
 const _isOAuthCallback = location.search.includes('code=') || location.hash.includes('access_token=');
 let _oauthHandled = false;
@@ -862,17 +911,17 @@ function renderAuthArea() {
     const credits = userProfile?.credits ?? '...';
     const isAdmin = currentUser.email === ADMIN_EMAIL;
     area.innerHTML = `
-      ${isAdmin ? `<button class="auth-btn" style="background:#000;color:var(--lime);border-color:#000;font-size:11px;padding:5px 12px" onclick="showPage('admin')">管理员</button>` : ''}
-      <span class="user-credits" onclick="openProfile()" style="cursor:pointer" title="点击查看个人中心">
-        ✦ ${credits} 慧根值
+      ${isAdmin ? `<button class="auth-btn" style="background:#000;color:var(--lime);border-color:#000;font-size:11px;padding:5px 12px" onclick="showPage('admin')">${L('管理员','Admin')}</button>` : ''}
+      <span class="user-credits" onclick="openProfile()" style="cursor:pointer" title="${L('点击查看个人中心','Open your profile')}">
+        ✦ ${credits} ${L('慧根值','credits')}
       </span>
       <div class="user-menu" onclick="openProfile()">
         <div class="user-avatar">${initial}</div>
       </div>`;
   } else {
     area.innerHTML = `
-      <button class="auth-btn auth-btn-login" onclick="openAuth('login')">登录</button>
-      <button class="auth-btn auth-btn-register" onclick="openAuth('register')">注册</button>`;
+      <button class="auth-btn auth-btn-login" onclick="openAuth('login')">${L('登录','Log in')}</button>
+      <button class="auth-btn auth-btn-register" onclick="openAuth('register')">${L('注册','Sign up')}</button>`;
   }
 }
 
@@ -1272,6 +1321,16 @@ async function pmRenderCredits() {
 }
 
 function pmEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// 轻量清洗 AI 输出里残留的 markdown（**加粗** / # 标题 / `代码` 等），转成安全 HTML
+function mdLite(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*\*/g,'')
+    .replace(/^\s{0,3}#{1,6}\s+/gm,'')
+    .replace(/`([^`]+?)`/g,'$1')
+    .replace(/\n/g,'<br>');
+}
 
 async function pmRenderHistory() {
   const data = await supaFetch(`qa_history?user_id=eq.${currentUser.id}&select=*&order=created_at.desc&limit=50`);
@@ -1408,13 +1467,14 @@ async function renderProfileContent(){await pmSwitchTab(_pmActiveTab||'credits')
 
 <!-- NAV -->
 <div class="nav">
-  <div class="nav-logo">人生导师召唤术</div>
+  <div class="nav-logo" data-zh="人生导师召唤术" data-en="Summon Mentors">人生导师召唤术</div>
+  <button id="lang-btn" class="auth-btn" onclick="toggleLang()">EN</button>
   <div id="auth-area" class="auth-btns">
-    <button class="auth-btn auth-btn-login" onclick="openAuth('login')">登录</button>
-    <button class="auth-btn auth-btn-register" onclick="openAuth('register')">注册</button>
+    <button class="auth-btn auth-btn-login" onclick="openAuth('login')" data-zh="登录" data-en="Log in">登录</button>
+    <button class="auth-btn auth-btn-register" onclick="openAuth('register')" data-zh="注册" data-en="Sign up">注册</button>
   </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('advisor')">导师召唤</button>
+    <button class="tab-btn active" onclick="switchTab('advisor')" data-zh="导师召唤" data-en="Summon">导师召唤</button>
   </div>
 </div>
 
@@ -1450,25 +1510,25 @@ async function renderProfileContent(){await pmSwitchTab(_pmActiveTab||'credits')
     <div class="ss" style="position:absolute;bottom:8%;left:22%;width:clamp(40px,4.5vw,60px);height:clamp(40px,4.5vw,60px);animation-delay:-8s;z-index:1">
       <svg viewBox="0 0 100 100" width="66" height="66"><polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill="url(#sg1)" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/></svg>
     </div>
-    <h1>人生导师<br>召唤术</h1>
-    <p>当你面临两难抉择，让跨越时代的思想家们，用各自的方法论为你解惑</p>
+    <h1 data-html data-zh="人生导师<br>召唤术" data-en="Summon<br>Your Mentors">人生导师<br>召唤术</h1>
+    <p data-zh="当你面临两难抉择，让跨越时代的思想家们，用各自的方法论为你解惑" data-en="When you face a hard choice, let thinkers across the ages weigh in — each through their own way of seeing.">当你面临两难抉择，让跨越时代的思想家们，用各自的方法论为你解惑</p>
     <div class="hero-btns">
       <button class="btn-black" style="padding:15px 38px;font-size:15px;letter-spacing:0.04em"
         onclick="document.getElementById('advisor-start').scrollIntoView({behavior:'smooth'})">
         <span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          立即召唤
+          <span data-zh="立即召唤" data-en="Summon now">立即召唤</span>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </span>
       </button>
       <button class="btn-outline" style="padding:15px 32px;font-size:15px;letter-spacing:0.03em" onclick="showPage('rt')">
-        <span>导师圆桌派</span>
+        <span data-zh="导师圆桌派" data-en="Round Table">导师圆桌派</span>
       </button>
       <button class="btn-outline" style="padding:15px 32px;font-size:15px;letter-spacing:0.03em" onclick="showPage('conflict')">
-        <span>吵架模拟器</span>
+        <span data-zh="吵架模拟器" data-en="Argument Simulator">吵架模拟器</span>
       </button>
       <button class="btn-outline" style="padding:15px 32px;font-size:15px;letter-spacing:0.03em" onclick="showPage('explore')">
-        <span>继续探索</span>
+        <span data-zh="继续探索" data-en="Explore More">继续探索</span>
       </button>
     </div>
     <div style="position:absolute;bottom:20px;display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(0,0,0,0.3);animation:floatB 2.5s ease-in-out infinite">
@@ -1483,25 +1543,25 @@ async function renderProfileContent(){await pmSwitchTab(_pmActiveTab||'credits')
 
   <!-- Question -->
   <div class="question-section">
-    <div class="section-label">描述你的困境</div>
+    <div class="section-label" data-zh="描述你的困境" data-en="Describe your dilemma">描述你的困境</div>
     <div class="question-guide">
       <div class="guide-header">
-        <span class="guide-title">如何写得更清楚</span>
-        <button class="guide-toggle" id="guide-toggle" onclick="toggleGuide()">收起提示</button>
+        <span class="guide-title" data-zh="如何写得更清楚" data-en="How to write it clearly">如何写得更清楚</span>
+        <button class="guide-toggle" id="guide-toggle" onclick="toggleGuide()" data-zh="收起提示" data-en="Hide tips">收起提示</button>
       </div>
       <div id="guide-hints" class="guide-hints">
-        <div class="guide-hint" onclick="insertHint('背景：')"><div class="guide-hint-label">背景</div><div class="guide-hint-text">事情发生在什么时间、什么关系或处境下</div></div>
-        <div class="guide-hint" onclick="insertHint('目前状态：')"><div class="guide-hint-label">目前状态</div><div class="guide-hint-text">现在面临什么处境，事情发展到哪一步</div></div>
-        <div class="guide-hint" onclick="insertHint('最难抉择的是：')"><div class="guide-hint-label">最难抉择的是</div><div class="guide-hint-text">卡在哪里，两个选项分别是什么</div></div>
-        <div class="guide-hint" onclick="insertHint('我担心的是：')"><div class="guide-hint-label">我担心的是</div><div class="guide-hint-text">最坏的情况是什么，最在意什么</div></div>
+        <div class="guide-hint" onclick="insertHint('背景：')"><div class="guide-hint-label" data-zh="背景" data-en="Context">背景</div><div class="guide-hint-text" data-zh="事情发生在什么时间、什么关系或处境下" data-en="When it happened, and in what relationship or situation">事情发生在什么时间、什么关系或处境下</div></div>
+        <div class="guide-hint" onclick="insertHint('目前状态：')"><div class="guide-hint-label" data-zh="目前状态" data-en="Current state">目前状态</div><div class="guide-hint-text" data-zh="现在面临什么处境，事情发展到哪一步" data-en="What you face now, and how far it has gone">现在面临什么处境，事情发展到哪一步</div></div>
+        <div class="guide-hint" onclick="insertHint('最难抉择的是：')"><div class="guide-hint-label" data-zh="最难抉择的是" data-en="The hard choice">最难抉择的是</div><div class="guide-hint-text" data-zh="卡在哪里，两个选项分别是什么" data-en="Where you're stuck, and what the two options are">卡在哪里，两个选项分别是什么</div></div>
+        <div class="guide-hint" onclick="insertHint('我担心的是：')"><div class="guide-hint-label" data-zh="我担心的是" data-en="My worry">我担心的是</div><div class="guide-hint-text" data-zh="最坏的情况是什么，最在意什么" data-en="The worst case, and what you care about most">最坏的情况是什么，最在意什么</div></div>
       </div>
       <div class="guide-textarea-wrap">
-        <textarea id="question" placeholder="例如：&#10;背景：我在一家公司做了3年，有一个创业机会找到我。&#10;目前状态：已经谈了两轮，对方条件不错，但需要我辞职全职加入。&#10;最难抉择的是：现在工作稳定薪水高，创业有风险但很心动。&#10;我担心的是：万一失败我已经30岁了，再找工作会很难。" oninput="updateCharCount(this)"></textarea>
+        <textarea id="question" data-i18n-attr="placeholder" data-zh="例如：&#10;背景：我在一家公司做了3年，有一个创业机会找到我。&#10;目前状态：已经谈了两轮，对方条件不错，但需要我辞职全职加入。&#10;最难抉择的是：现在工作稳定薪水高，创业有风险但很心动。&#10;我担心的是：万一失败我已经30岁了，再找工作会很难。" data-en="e.g.&#10;Context: I've been at a company 3 years, and a startup opportunity found me.&#10;Current state: Two rounds of talks, good terms, but I'd have to quit and join full-time.&#10;The hard choice: my job is stable and well-paid; the startup is risky but exciting.&#10;My worry: if it fails I'm already 30, and job-hunting again will be hard." placeholder="例如：&#10;背景：我在一家公司做了3年，有一个创业机会找到我。&#10;目前状态：已经谈了两轮，对方条件不错，但需要我辞职全职加入。&#10;最难抉择的是：现在工作稳定薪水高，创业有风险但很心动。&#10;我担心的是：万一失败我已经30岁了，再找工作会很难。" oninput="updateCharCount(this)"></textarea>
         <div class="guide-structure">
-          <div class="guide-struct-item"><div class="guide-struct-dot"></div>背景</div>
-          <div class="guide-struct-item"><div class="guide-struct-dot"></div>现状</div>
-          <div class="guide-struct-item"><div class="guide-struct-dot"></div>抉择点</div>
-          <div class="guide-struct-item"><div class="guide-struct-dot"></div>顾虑</div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div><span data-zh="背景" data-en="Context">背景</span></div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div><span data-zh="现状" data-en="State">现状</span></div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div><span data-zh="抉择点" data-en="Choice">抉择点</span></div>
+          <div class="guide-struct-item"><div class="guide-struct-dot"></div><span data-zh="顾虑" data-en="Worry">顾虑</span></div>
           <span class="char-count" id="char-count">0 字</span>
         </div>
       </div>
@@ -1510,15 +1570,15 @@ async function renderProfileContent(){await pmSwitchTab(_pmActiveTab||'credits')
 
   <!-- Advisors -->
   <div class="advisors-section">
-    <div class="section-label">选择你的导师（可多选）</div>
+    <div class="section-label" data-zh="选择你的导师（可多选）" data-en="Choose your mentors (multi-select)">选择你的导师（可多选）</div>
     <div class="advisors-groups" id="advisors-grid"></div>
   </div>
 
   <!-- Submit -->
   <div class="submit-row">
-    <button class="btn-outline select-all-btn" onclick="toggleAll()"><span>全选 / 清空</span></button>
+    <button class="btn-outline select-all-btn" onclick="toggleAll()"><span data-zh="全选 / 清空" data-en="Select all / Clear">全选 / 清空</span></button>
     <button class="btn-black ask-btn" id="ask-btn" onclick="askAdvisors()">
-      <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>召唤导师们</span>
+      <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><span data-zh="召唤导师们" data-en="Summon the mentors">召唤导师们</span></span>
     </button>
   </div>
 
@@ -1781,17 +1841,23 @@ const histories = {};
 
 // ── 导师分类（在这里调整归类即可，前后端两个网格自动同步）──
 const CATEGORIES = [
-  { key:'emotion', icon:'💞', name:'情感导师',
+  { key:'emotion', icon:'💞', name:'情感导师', name_en:'Love & Relationships',
     desc:'感情、关系、分手、暧昧、择偶——看清两性博弈与人心',
+    desc_en:'Love, relationships, breakups, mixed signals, dating — see the game and the human heart',
     egs:['他最近忽冷忽热，我要不要主动找他？','在一起三年了，要不要结婚我很犹豫'],
+    egs_en:["He's been hot and cold — should I reach out first?","Together 3 years — should we get married? I'm unsure"],
     ids:['ququ','xuedi','wanghuilin','adler','freud'] },
-  { key:'career', icon:'🎯', name:'事业导师',
+  { key:'career', icon:'🎯', name:'事业导师', name_en:'Career & Decisions',
     desc:'工作、创业、谈判、转行、投资——找准杠杆点与策略',
+    desc_en:'Work, startups, negotiation, career switches, investing — find the leverage and the strategy',
     egs:['有个创业机会找上门，要不要辞职全职做？','两个 offer，一个稳定一个有挑战，怎么选？'],
+    egs_en:['A startup offer landed in my lap — should I quit and go all in?','Two offers — one stable, one challenging. How do I choose?'],
     ids:['musk','marx','mao','sun','heyi','sun2','trump','caocao','qinshihuang'] },
-  { key:'life', icon:'🌱', name:'生活导师',
+  { key:'life', icon:'🌱', name:'生活导师', name_en:'Life & Meaning',
     desc:'内耗、迷茫、意义、自我成长——安顿内心，看清自己',
+    desc_en:'Burnout, feeling lost, meaning, self-growth — settle your mind and see yourself clearly',
     egs:['最近特别焦虑内耗，怎么才能平静下来？','总觉得人生没意义，该怎么走出来？'],
+    egs_en:["I've been anxious and drained lately — how do I find calm?","I feel like life has no meaning — how do I move forward?"],
     ids:['stoic','laozi','buddha','confucius','nietzsche','plato','jung','god','michelangelo','kid','dog'] },
 ];
 
@@ -1818,14 +1884,15 @@ function advisorGroupsHTML(selSet, toggleFn){
       <div class="advisor-card ${selSet.has(a.id)?'selected':''}" onclick="${toggleFn}('${a.id}')">
         <div class="check-ring">${selSet.has(a.id)?'✓':''}</div>
         <div class="adv-glyph">${GLYPHS[a.id]||''}</div>
-        <div class="adv-name">${a.name}</div>
-        <div class="adv-tag">${a.tag}</div>
-        <button class="bio-btn" onclick="event.stopPropagation();showBio('${a.id}')">身份介绍</button>
+        <div class="adv-name">${advName(a)}</div>
+        <div class="adv-tag">${advTag(a)}</div>
+        <button class="bio-btn" onclick="event.stopPropagation();showBio('${a.id}')">${L('身份介绍','About')}</button>
       </div>`).join('');
-    const pills=c.egs.map(e=>`<span class="adv-eg-pill" onclick="fillExample('${e.replace(/'/g,"\\'")}')">${e}</span>`).join('');
+    const egs=L(c.egs,c.egs_en);
+    const pills=egs.map(e=>`<span class="adv-eg-pill" onclick="fillExample('${e.replace(/'/g,"\\'")}')">${e}</span>`).join('');
     return `<div class="adv-cat">
-      <div class="adv-cat-head"><span class="adv-cat-name">${c.icon} ${c.name}</span><span class="adv-cat-desc">${c.desc}</span></div>
-      <div class="adv-cat-eg"><span class="adv-cat-eg-label">点击示例试问</span>${pills}</div>
+      <div class="adv-cat-head"><span class="adv-cat-name">${c.icon} ${L(c.name,c.name_en)}</span><span class="adv-cat-desc">${L(c.desc,c.desc_en)}</span></div>
+      <div class="adv-cat-eg"><span class="adv-cat-eg-label">${L('点击示例试问','Try an example')}</span>${pills}</div>
       <div class="advisors-grid">${cards}</div>
     </div>`;
   }).join('');
@@ -1861,12 +1928,12 @@ async function callAdvisor(adv,userMsg,bodyEl,followupArea){
   try{
     const resp=await fetch('/api/chat',{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:adv.system,messages:histories[adv.id]})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:adv.system+L('','\n\n重要：全程用英文回答（Respond entirely in English）。'),messages:histories[adv.id]})});
     const data=await resp.json();
     if(data.error){bodyEl.textContent=`错误：${data.error.message}`;bodyEl.style.color='var(--error)';histories[adv.id].pop();return;}
     const reply=data.content?.[0]?.text||'（获取建议失败）';
     histories[adv.id].push({role:'assistant',content:reply});
-    bodyEl.textContent=reply;
+    bodyEl.innerHTML=mdLite(reply);
     // 金句收藏 & 分享（所有用户可用）
     const qa=document.createElement('div');qa.className='quote-actions';
     const favB=document.createElement('button');favB.className='quote-fav-btn';favB.textContent='❤️ 收藏金句';
@@ -2008,8 +2075,8 @@ async function rtGo(){
 
 你即将和${others}一起围绕这个话题展开圆桌讨论："${q}"
 
-入场介绍环节：用你自己最鲜明的立场亮相——要有个性，要让其他人一听就知道你和他们不一样。不超过40字，直接开口，不要用markdown格式。`;
-    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:sys,messages:[{role:'user',content:'请介绍自己的立场。'}]})});
+入场介绍环节：用你自己最鲜明的立场亮相——要有个性，要让其他人一听就知道你和他们不一样。不超过40字，直接开口，不要用markdown格式。`+L('','\n\n重要：全程用英文回答（Respond entirely in English）。');
+    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:sys,messages:[{role:'user',content:L('请介绍自己的立场。','Introduce your stance.')}]})});
     const data=await resp.json();
     return{adv,text:data.content?.[0]?.text||''};
   }));
@@ -2020,44 +2087,72 @@ async function rtGo(){
     card.className='rt-card';
     card.style.animationDelay=(i*0.08)+'s';
     const safeText=text.replace(/'/g,"\\'").replace(/\n/g,' ');
-    card.innerHTML=`<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
+    card.innerHTML=`<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${mdLite(text)}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
     arena.appendChild(card);
   });
+
+  const addCard=(adv,text,i)=>{
+    const card=document.createElement('div');
+    card.className='rt-card';
+    card.style.animationDelay=(i*0.08)+'s';
+    card.innerHTML=`<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${mdLite(text)}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
+    arena.appendChild(card);
+  };
+  const askOne=async(sys)=>{
+    sys = sys + L('', '\n\n重要：全程用英文回答（Respond entirely in English）。');
+    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:[{role:'user',content:L('请发言。','Please speak.')}]})});
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    return data.content?.[0]?.text||'';
+  };
 
   for(let r=1;r<=rtRounds;r++){
     const hdr=document.createElement('div');
     hdr.className='rt-round-head';
     hdr.innerHTML=`<div class="rt-round-title">第 ${r} 轮</div><div class="rt-round-badge">${labels[r-1]||'继续'}</div><div class="rt-round-line"></div>`;
     arena.appendChild(hdr);
-    const thinking=document.createElement('div');
-    thinking.className='rt-thinking';
-    thinking.innerHTML='<div class="loading-wave"><span></span><span></span><span></span></div>导师们正在思考…';
-    arena.appendChild(thinking);
-    thinking.scrollIntoView({behavior:'smooth',block:'end'});
+
     let hist='';
     for(let i=0;i<r-1;i++){
       hist+=`【第${i+1}轮】\n`;
       allResults[i].forEach(({adv,text})=>{hist+=`${adv.name}：${text}\n`;});
       hist+='\n';
     }
-    const results=await Promise.all(advs.map(async adv=>{
-      const sys=r===1
-        ?`你就是${adv.name}本人。`+adv.system+`\n\n圆桌讨论话题："${q}"\n\n在场的还有：${advs.filter(x=>x.id!==adv.id).map(x=>x.name).join("、")}。\n\n第一轮，用你最鲜明的立场直接开炮。不用管别人怎么想，先把你自己的核心判断亮出来。有个性，有锋芒，不要四平八稳。不要用markdown格式。100字以内。`
-        :`你就是${adv.name}本人，绝对不能提到自己的名字。`+adv.system+`\n\n圆桌讨论话题："${q}"\n\n在场的还有：${advs.filter(x=>x.id!==adv.id).map(x=>x.name).join("、")}。\n\n前面的发言：\n${hist}\n\n发言记录里"${adv.name}：xxx"这条是你自己之前说的，不要自己评论自己。其他名字的发言才是你可以回应的对象。\n\n现在针对其他人说的内容接话：可以点名反驳，可以认同并补刀，也可以把你的核心观点推进一步。有火气，有立场。不要用markdown格式。100字以内。`;
-      const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:[{role:'user',content:'请发言。'}]})});
-      const data=await resp.json();
-      if(data.error)throw new Error(data.error.message);
-      return{adv,text:data.content?.[0]?.text||''};
-    }));
-    thinking.remove();
-    allResults.push(results);
-    results.forEach(({adv,text},i)=>{
-      const card=document.createElement('div');
-      card.className='rt-card';
-      card.style.animationDelay=(i*0.08)+'s';
-      card.innerHTML=`<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
-      arena.appendChild(card);
-    });
+    const others=adv=>advs.filter(x=>x.id!==adv.id).map(x=>x.name).join('、');
+
+    if(r===1){
+      const thinking=document.createElement('div');
+      thinking.className='rt-thinking';
+      thinking.innerHTML='<div class="loading-wave"><span></span><span></span><span></span></div>导师们正在亮明立场…';
+      arena.appendChild(thinking);
+      thinking.scrollIntoView({behavior:'smooth',block:'end'});
+      const results=await Promise.all(advs.map(async adv=>{
+        const sys=`你就是${adv.name}本人。`+adv.system+`\n\n圆桌讨论话题："${q}"\n\n在场的还有：${others(adv)}。\n\n第一轮，亮出你最鲜明的立场：用你自己的理论给出一个明确判断，直接、有锋芒，不要四平八稳。把话撂在这，后面几轮别人会来跟你交锋。\n\n严禁任何markdown符号（不要 **加粗**、不要 # 号、不要列点），纯口语。100字以内。`;
+        let text=''; try{ text=await askOne(sys); }catch(e){ text='（这一轮没能发言）'; }
+        return {adv,text};
+      }));
+      thinking.remove();
+      allResults.push(results);
+      results.forEach(({adv,text},i)=>addCard(adv,text,i));
+    } else {
+      const roundResults=[];
+      for(let k=0;k<advs.length;k++){
+        const adv=advs[k];
+        const thinking=document.createElement('div');
+        thinking.className='rt-thinking';
+        thinking.innerHTML=`<div class="loading-wave"><span></span><span></span><span></span></div>${adv.name} 正在思考回应…`;
+        arena.appendChild(thinking);
+        thinking.scrollIntoView({behavior:'smooth',block:'end'});
+        let curRound='';
+        roundResults.forEach(({adv:a,text})=>{curRound+=`${a.name}：${text}\n`;});
+        const sys=`你就是${adv.name}本人，绝对不能提到自己的名字。`+adv.system+`\n\n圆桌讨论话题："${q}"\n\n在场的还有：${others(adv)}。\n\n之前几轮的发言：\n${hist||'（无）'}\n本轮已经说过的：\n${curRound||'（你是本轮第一个发言的，就针对上一轮某人接话）'}\n\n硬性要求：\n1. 开口先点名回应一位具体的人——用半句话复述TA刚才的核心观点，再旗帜鲜明地说你【赞同】还是【反对】。\n2. 用你自己的理论支撑：赞同就把TA的逻辑推进一步、或补一记更狠的；反对就直指TA的逻辑漏洞在哪。\n3. 咬住对方话里一个具体的点，别泛泛而谈。要有交锋、有火花。\n4. 不许重复你自己之前说过的话，必须带新东西。\n\n严禁任何markdown符号（不要 **加粗**、不要 # 号、不要列点），纯口语。90字以内。`;
+        let text=''; try{ text=await askOne(sys); }catch(e){ text='（这一轮没能发言）'; }
+        roundResults.push({adv,text});
+        thinking.remove();
+        addCard(adv,text,k);
+      }
+      allResults.push(roundResults);
+    }
   }
   if(document.getElementById('rt-v-check').checked){
     const vt=document.createElement('div');
@@ -2070,13 +2165,13 @@ async function rtGo(){
       const resp=await fetch('/api/chat',{method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,
-          system:`你是一位圆桌讨论的观察者。本次参与的导师共${advs.length}位：${advs.map(a=>a.name).join('、')}，总结时只能提到这${advs.length}位，不要凭空添加其他人。不评判谁对谁错。你的任务：1. 用一两句话点出这场讨论最有意思的张力或分歧；2. 分别用一句话总结每位导师的核心逻辑（严格按照上面列出的${advs.length}位，不多不少）；3. 给用户留下2-3个值得深想的问题——不是答案，是入口。语气平静有洞察，不替用户做决定。150字以内，禁止说谁赢谁输。`,
-          messages:[{role:'user',content:`记录：\n${tr}\n请总结。`}]})});
+          system:`你是一位圆桌讨论的观察者。本次参与的导师共${advs.length}位：${advs.map(a=>a.name).join('、')}，总结时只能提到这${advs.length}位，不要凭空添加其他人。不评判谁对谁错。你的任务：1. 用一两句话点出这场讨论最有意思的张力或分歧；2. 分别用一句话总结每位导师的核心逻辑（严格按照上面列出的${advs.length}位，不多不少）；3. 给用户留下2-3个值得深想的问题——不是答案，是入口。语气平静有洞察，不替用户做决定。150字以内，禁止说谁赢谁输。`+L('','\n\n重要：全程用英文回答（Respond entirely in English）。'),
+          messages:[{role:'user',content:`记录：\n${tr}\n${L('请总结。','Please summarize.')}`}]})});
       const data=await resp.json();
       vt.remove();
       const vc=document.createElement('div');
       vc.className='rt-verdict';
-      vc.innerHTML=`<div class="rt-verdict-eye">🔍 观察者说</div><div class="rt-verdict-title">值得你想的</div><div class="rt-verdict-text">${data.content?.[0]?.text||''}</div>`;
+      vc.innerHTML=`<div class="rt-verdict-eye">🔍 观察者说</div><div class="rt-verdict-title">值得你想的</div><div class="rt-verdict-text">${mdLite(data.content?.[0]?.text||'')}</div>`;
       arena.appendChild(vc);
     }catch(e){vt.remove();}
   }
@@ -2190,8 +2285,8 @@ ${prevText}
 
 用户说："${userMsg}"
 
-用你自己的逻辑回应用户。认同就从新角度补充，不认同就反驳。关键：你之前说过的观点不要重复，必须推进一步或转换角度，哪怕认同也要带出新的东西。有个性，有立场。不要用markdown格式。80字以内。`;
-    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:sys,messages:[{role:'user',content:'请回应。'}]})});
+用你自己的逻辑回应用户。认同就从新角度补充，不认同就反驳。关键：你之前说过的观点不要重复，必须推进一步或转换角度，哪怕认同也要带出新的东西。有个性，有立场。不要用markdown格式。80字以内。`+L('','\n\n重要：全程用英文回答（Respond entirely in English）。');
+    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:sys,messages:[{role:'user',content:L('请回应。','Please respond.')}]})});
     const data = await resp.json();
     return {adv, text: data.content?.[0]?.text||''};
   }));
@@ -2207,7 +2302,7 @@ ${prevText}
     const card = document.createElement('div');
     card.className = 'rt-card';
     card.style.animationDelay = (i*0.08)+'s';
-    card.innerHTML = `<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
+    card.innerHTML = `<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${mdLite(text)}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
     arena.insertBefore(card, followupArea);
   });
 
@@ -2244,8 +2339,8 @@ async function rtWatchOnly(){
 前面的讨论内容：
 ${prevText}
 
-讨论继续。你之前说过的观点不要重复，必须带来新的内容——可以点名某人接话、推进自己的立场、或引入一个全新角度让讨论升级。如果感觉已经说透了，就大胆转向提出新问题。不要用markdown格式。80字以内。`;
-    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:sys,messages:[{role:'user',content:'请继续。'}]})});
+讨论继续。你之前说过的观点不要重复，必须带来新的内容——可以点名某人接话、推进自己的立场、或引入一个全新角度让讨论升级。如果感觉已经说透了，就大胆转向提出新问题。不要用markdown格式。80字以内。`+L('','\n\n重要：全程用英文回答（Respond entirely in English）。');
+    const resp = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:250,system:sys,messages:[{role:'user',content:L('请继续。','Please continue.')}]})});
     const data = await resp.json();
     return {adv, text: data.content?.[0]?.text||''};
   }));
@@ -2261,7 +2356,7 @@ ${prevText}
     const card = document.createElement('div');
     card.className = 'rt-card';
     card.style.animationDelay = (i*0.08)+'s';
-    card.innerHTML = `<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${text}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
+    card.innerHTML = `<div class="rt-card-head"><div class="rt-glyph">${GLYPHS[adv.id]||''}</div><div><div class="rt-card-name">${adv.name}</div><div class="rt-card-tag">${adv.tag}</div></div></div><div class="rt-card-text">${mdLite(text)}</div>${quoteActions(text,'导师圆桌派',adv.name)}`;
     arena.appendChild(card);
   });
 
@@ -2498,6 +2593,7 @@ function makeFeedbackWidget(ctxId) {
 
 function init(){
   renderAdvisors();
+  applyLang();
 }
 init();
 
