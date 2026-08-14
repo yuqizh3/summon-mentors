@@ -786,9 +786,14 @@ let userProfile = null;
 let _sbToken = null;
 
 // ── 中英文切换 i18n ──
-let LANG = (localStorage.getItem('ym_lang')==='en') ? 'en' : 'zh';
+// localStorage 安全封装：隐私模式/webview 下 localStorage 可能抛异常，不能让它拖垮整个页面
+const safeLS = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+let LANG = (safeLS.get('ym_lang')==='en') ? 'en' : 'zh';
 function L(zh, en){ return LANG==='en' ? (en==null?zh:en) : zh; }
-function toggleLang(){ LANG = (LANG==='en'?'zh':'en'); localStorage.setItem('ym_lang', LANG); applyLang(); }
+function toggleLang(){ LANG = (LANG==='en'?'zh':'en'); safeLS.set('ym_lang', LANG); applyLang(); }
 function applyLang(){
   document.documentElement.lang = (LANG==='en'?'en':'zh-CN');
   document.querySelectorAll('#lang-btn, .js-lang-btn').forEach(lb=>{ lb.textContent = (LANG==='en'?'中文':'EN'); });
@@ -896,6 +901,10 @@ sb.auth.onAuthStateChange(async (event, session) => {
 // Runs after DOM ready — just syncs UI with whatever state onAuthStateChange set
 function checkInitialSession() {
   renderAuthArea();
+  // 通过邀请链接进入且未登录 → 自动弹出注册页（延迟等待已有会话恢复，避免打扰老用户）
+  if (URL_INVITE) {
+    setTimeout(() => { if (!currentUser) openAuth('register'); }, 1200);
+  }
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', checkInitialSession);
@@ -963,9 +972,12 @@ async function loadProfile() {
 }
 
 // ── Auth modal ──
+// 从邀请链接 ?invite=CODE 读取邀请码，注册时自动填入
+const URL_INVITE = (new URLSearchParams(location.search).get('invite') || '').trim().toUpperCase();
 function openAuth(tab) {
   document.getElementById('auth-modal').style.display = 'flex';
-  switchAuthTab(tab || 'login');
+  // 带邀请码进来的，默认打开注册页
+  switchAuthTab(tab || (URL_INVITE ? 'register' : 'login'));
 }
 function closeAuth() {
   document.getElementById('auth-modal').style.display = 'none';
@@ -975,7 +987,11 @@ function switchAuthTab(tab) {
   document.getElementById('tab-login').classList.toggle('active', tab==='login');
   document.getElementById('tab-register').classList.toggle('active', tab==='register');
   document.getElementById('auth-invite-row').style.display = tab==='register' ? 'block' : 'none';
-  document.getElementById('auth-submit-btn').textContent = tab==='login' ? '登录' : '注册';
+  if (tab==='register') {
+    const inv = document.getElementById('auth-invite');
+    if (inv && !inv.value && URL_INVITE) inv.value = URL_INVITE;
+  }
+  document.getElementById('auth-submit-btn').textContent = tab==='login' ? L('登录','Log in') : L('注册','Sign up');
   document.getElementById('auth-msg').textContent = '';
   document.getElementById('auth-submit-btn').dataset.tab = tab;
 }
@@ -2105,9 +2121,19 @@ async function rtGo(){
 你即将和${others}一起围绕这个话题展开圆桌讨论："${q}"
 
 入场介绍环节：用你自己最鲜明的立场亮相——要有个性，要让其他人一听就知道你和他们不一样。不超过40字，直接开口，不要用markdown格式。`+L('','\n\n重要：全程用英文回答（Respond entirely in English）。');
-    const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:sys,messages:[{role:'user',content:L('请介绍自己的立场。','Introduce your stance.')}]})});
-    const data=await resp.json();
-    return{adv,text:data.content?.[0]?.text||''};
+    let text='';
+    for(let attempt=0; attempt<3; attempt++){
+      try{
+        const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:sys,messages:[{role:'user',content:L('请介绍自己的立场。','Introduce your stance.')}]})});
+        const data=await resp.json();
+        if(data.error) throw new Error(data.error.message||'api error');
+        text=data.content?.[0]?.text||'';
+        if(text.trim()) break;
+        throw new Error('empty');
+      }catch(e){ if(attempt<2) await new Promise(r=>setTimeout(r, 800*(attempt+1))); }
+    }
+    if(!text.trim()) text=L('（这位导师暂时没能入场，稍后再试）','(This mentor could not enter — try again later)');
+    return{adv,text};
   }));
 
   introWait.remove();
@@ -3517,9 +3543,9 @@ async function cfEndConflict(){
 <!-- Main Summary Modal -->
 <div id="main-summary-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)">
-    <div style="padding:20px 24px;border-bottom:1.5px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em">导师精华总结</div>
-      <button onclick="closeMainSummary()" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:rgba(0,0,0,.4);line-height:1">✕</button>
+    <div style="position:sticky;top:0;z-index:2;background:#fff;padding:20px 24px;border-bottom:1.5px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;border-radius:20px 20px 0 0">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em" data-zh="导师精华总结" data-en="Summary">导师精华总结</div>
+      <button onclick="closeMainSummary()" aria-label="close" style="background:rgba(0,0,0,.05);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;color:rgba(0,0,0,.55);line-height:1;flex-shrink:0">✕</button>
     </div>
     <div id="main-summary-body" style="padding:24px"></div>
     <div style="padding:16px 24px;border-top:1.5px solid rgba(0,0,0,.08)">

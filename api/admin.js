@@ -10,15 +10,26 @@ const SH = {
 
 async function q(path) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: SH });
+  if (!r.ok) return [];
   return r.json();
 }
 
 async function count(table, filter = '') {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?${filter}&select=id&limit=1`;
+  const qs = filter ? `${filter}&select=id` : `select=id`;
+  const url = `${SUPABASE_URL}/rest/v1/${table}?${qs}&limit=1`;
   const r = await fetch(url, { headers: { ...SH, Prefer: 'count=exact', 'Range-Unit': 'items', Range: '0-0' } });
   const cr = r.headers.get('content-range') || '';
   const n = parseInt(cr.split('/')[1]);
   return isNaN(n) ? 0 : n;
+}
+
+async function getAuthUsers(limit = 20) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=${limit}&page=1`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
+  });
+  if (!r.ok) return [];
+  const d = await r.json();
+  return d.users || [];
 }
 
 export default async function handler(req, res) {
@@ -42,7 +53,7 @@ export default async function handler(req, res) {
 
   const [
     totalUsers, newToday, newWeek, totalQA, qaToday, totalCheckins,
-    profiles, recentUsers, mentorStats, modeStats, txSummary, dailyQA
+    profiles, profilesRecent, authUsers, mentorStats, modeStats, txSummary, dailyQA
   ] = await Promise.all([
     count('user_profiles'),
     count('user_profiles', `created_at=gte.${today}`),
@@ -51,12 +62,18 @@ export default async function handler(req, res) {
     count('qa_history', `created_at=gte.${today}`),
     count('check_ins'),
     q('user_profiles?select=credits,total_earned,total_spent'),
-    q('user_profiles?select=id,email,credits,invite_code,created_at&order=created_at.desc&limit=20'),
-    q('qa_history?select=mentor_name&mentor_name=neq.&mentor_name=not.is.null&limit=5000'),
+    q('user_profiles?select=id,credits,invite_code,created_at&order=created_at.desc&limit=20'),
+    getAuthUsers(20),
+    q('qa_history?select=mentor_name&mentor_name=not.is.null&limit=5000'),
     q('qa_history?select=mode&limit=5000'),
     q('huigen_transactions?select=amount,type&limit=5000'),
     q(`qa_history?select=created_at&created_at=gte.${weekAgo}&limit=5000`)
   ]);
+
+  // Merge auth email into profile rows
+  const emailMap = {};
+  (authUsers || []).forEach(u => { emailMap[u.id] = u.email; });
+  const recentUsers = (profilesRecent || []).map(p => ({ ...p, email: emailMap[p.id] || '' }));
 
   res.status(200).json({
     totalUsers, newToday, newWeek, totalQA, qaToday, totalCheckins,
