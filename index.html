@@ -3873,6 +3873,9 @@ async function cfEndConflict(){
 
 <script>
 // ── ADMIN PANEL ──
+let __adminData = null;
+let __adminRange = 7;
+
 async function adminInit() {
   if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
     document.getElementById('admin-content').innerHTML = '<div class="admin-loading" style="color:#dc2626">无权限访问管理员后台。</div>';
@@ -3880,110 +3883,118 @@ async function adminInit() {
   }
   const el = document.getElementById('admin-content');
   el.innerHTML = '<div class="admin-loading"><div class="loading-wave" style="justify-content:center;margin-bottom:12px"><span></span><span></span><span></span></div>正在加载数据…</div>';
-
   try {
-    const resp = await fetch('/api/admin', {
-      headers: { Authorization: `Bearer ${_sbToken || ''}` }
-    });
+    const resp = await fetch('/api/admin', { headers: { Authorization: `Bearer ${_sbToken || ''}` } });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${resp.status}`);
     }
-    const d = await resp.json();
-    const { totalUsers, newToday, newWeek, totalQA, qaToday, totalCheckins,
-      profiles, recentUsers, mentorStats, modeStats, txSummary, dailyQA } = d;
+    __adminData = await resp.json();
+    adminRender();
+  } catch(e) {
+    el.innerHTML = `<div class="admin-loading" style="color:#dc2626">加载失败：${e.message}</div>`;
+  }
+}
 
-    // Aggregate credits stats
-    const totalCredits = (profiles || []).reduce((s, p) => s + (p.credits || 0), 0);
-    const totalEarned = (profiles || []).reduce((s, p) => s + (p.total_earned || 0), 0);
-    const totalSpent = (profiles || []).reduce((s, p) => s + (p.total_spent || 0), 0);
+function adminSetRange(n) { __adminRange = n; adminRender(); }
 
-    // Mentor ranking
-    const mentorMap = {};
-    (mentorStats || []).forEach(r => {
-      const name = r.mentor_name || '未知';
-      mentorMap[name] = (mentorMap[name] || 0) + 1;
-    });
-    const mentorRank = Object.entries(mentorMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    const maxMentor = mentorRank[0]?.[1] || 1;
+// 按天数窗口聚合（含当天）
+function adminRangeAgg(days) {
+  const d = __adminData || {};
+  const start = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
+  const inRange = s => s && s.slice(0, 10) >= start;
+  const signups = (d.signups30 || []).filter(r => inRange(r.created_at)).length;
+  const qa = (d.qa30 || []).filter(r => inRange(r.created_at)).length;
+  const checkins = (d.checkins30 || []).filter(r => inRange(r.checked_at)).length;
+  let granted = 0, spent = 0;
+  (d.tx30 || []).forEach(t => { if (inRange(t.created_at)) { if (t.amount > 0) granted += t.amount; else spent += Math.abs(t.amount); } });
+  const dayMap = {};
+  for (let i = days - 1; i >= 0; i--) dayMap[new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)] = 0;
+  (d.qa30 || []).forEach(r => { const k = r.created_at?.slice(0, 10); if (k && dayMap[k] !== undefined) dayMap[k]++; });
+  return { signups, qa, checkins, granted, spent, dayMap };
+}
 
-    // Mode breakdown
-    const modeMap = {};
-    (modeStats || []).forEach(r => { modeMap[r.mode || 'advisor'] = (modeMap[r.mode || 'advisor'] || 0) + 1; });
+function adminRender() {
+  const d = __adminData; if (!d) return;
+  const el = document.getElementById('admin-content');
+  const { totalUsers, newToday, newWeek, totalQA, qaToday, totalCheckins, profiles, recentUsers, allUsers, mentorStats, modeStats, txSummary } = d;
 
-    // Daily QA last 7 days
-    const dayMap = {};
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-      dayMap[d] = 0;
-    }
-    (dailyQA || []).forEach(r => {
-      const d = r.created_at?.slice(0, 10);
-      if (d && dayMap[d] !== undefined) dayMap[d]++;
-    });
-    const maxDay = Math.max(...Object.values(dayMap), 1);
+  const totalCredits = (profiles || []).reduce((s, p) => s + (p.credits || 0), 0);
+  const totalEarned = (profiles || []).reduce((s, p) => s + (p.total_earned || 0), 0);
+  const totalSpent = (profiles || []).reduce((s, p) => s + (p.total_spent || 0), 0);
 
-    // Credits flow
-    let creditsIn = 0, creditsOut = 0;
-    (txSummary || []).forEach(t => {
-      if (t.amount > 0) creditsIn += t.amount;
-      else creditsOut += Math.abs(t.amount);
-    });
+  const mentorMap = {};
+  (mentorStats || []).forEach(r => { const name = r.mentor_name || '未知'; mentorMap[name] = (mentorMap[name] || 0) + 1; });
+  const mentorRank = Object.entries(mentorMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const maxMentor = mentorRank[0]?.[1] || 1;
 
-    const modeLabels = { advisor: '导师召唤', roundtable: '圆桌派', conflict: '吵架模拟器' };
+  const modeMap = {};
+  (modeStats || []).forEach(r => { modeMap[r.mode || 'advisor'] = (modeMap[r.mode || 'advisor'] || 0) + 1; });
 
-    el.innerHTML = `
-      <!-- KPI Grid -->
-      <div class="admin-grid">
-        <div class="admin-stat">
-          <div class="admin-stat-num">${totalUsers || 0}</div>
-          <div class="admin-stat-lbl">总用户数</div>
-          <div class="admin-stat-sub">今日新增 +${newToday || 0} · 本周 +${newWeek || 0}</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num">${totalQA || 0}</div>
-          <div class="admin-stat-lbl">累计 AI 调用</div>
-          <div class="admin-stat-sub">今日 ${qaToday || 0} 次</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num">${totalCheckins || 0}</div>
-          <div class="admin-stat-lbl">累计签到次数</div>
-          <div class="admin-stat-sub">平均 ${totalUsers ? (totalCheckins / totalUsers).toFixed(1) : 0} 次/用户</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num">${totalCredits}</div>
-          <div class="admin-stat-lbl">慧根值余额合计</div>
-          <div class="admin-stat-sub">总发放 ${totalEarned} · 总消耗 ${totalSpent}</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num">${creditsIn}</div>
-          <div class="admin-stat-lbl">慧根值发放总量</div>
-          <div class="admin-stat-sub">消耗 ${creditsOut}</div>
-        </div>
-        <div class="admin-stat" style="background:var(--lime)">
-          <div class="admin-stat-num" style="color:#000">${totalQA && totalUsers ? (totalQA / totalUsers).toFixed(1) : 0}</div>
-          <div class="admin-stat-lbl" style="color:rgba(0,0,0,.5)">人均调用次数</div>
-          <div class="admin-stat-sub" style="color:rgba(0,0,0,.35)">参与深度指标</div>
+  let creditsIn = 0, creditsOut = 0;
+  (txSummary || []).forEach(t => { if (t.amount > 0) creditsIn += t.amount; else creditsOut += Math.abs(t.amount); });
+
+  const modeLabels = { advisor: '导师召唤', roundtable: '圆桌派', conflict: '吵架模拟器' };
+
+  // 时间维度
+  const range = __adminRange;
+  const agg = adminRangeAgg(range);
+  const maxDay = Math.max(...Object.values(agg.dayMap), 1);
+  const rangeLabel = range === 1 ? '今日' : (range === 7 ? '近 7 天' : '近 30 天');
+  const rbtn = (n, txt) => `<button onclick="adminSetRange(${n})" style="padding:5px 14px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;border:1.5px solid ${range===n?'#000':'var(--border2)'};background:${range===n?'#000':'transparent'};color:${range===n?'var(--lime)':'#000'}">${txt}</button>`;
+  const rstat = (lbl, val) => `<div style="background:rgba(0,0,0,.03);border-radius:12px;padding:14px 16px"><div style="font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1;color:#000">${val}</div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">${lbl}</div></div>`;
+  const barsHTML = Object.entries(agg.dayMap).map(([dd, n]) => {
+    const pct = Math.round(n / maxDay * 100);
+    return `<div class="admin-bar-row"><div class="admin-bar-label">${dd.slice(5)}</div><div class="admin-bar-track"><div class="admin-bar-fill" style="width:${pct}%"></div></div><div class="admin-bar-val">${n}</div></div>`;
+  }).join('');
+
+  // 空投用户列表
+  const airdropRows = (allUsers || []).map(u => `<label class="airdrop-row" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer;font-size:13px"><input type="checkbox" class="airdrop-ck" value="${u.id}" data-email="${(u.email||'').replace(/"/g,'&quot;')}" onchange="adminUpdateSelCount()" style="width:15px;height:15px;accent-color:#000"><span style="font-family:monospace;font-size:12px">${u.email || u.id.slice(0,8)}</span><span style="margin-left:auto;color:var(--muted);font-size:12px">${u.credits} 慧根</span></label>`).join('');
+
+  el.innerHTML = `
+    <!-- 全局 KPI -->
+    <div class="admin-grid">
+      <div class="admin-stat"><div class="admin-stat-num">${totalUsers || 0}</div><div class="admin-stat-lbl">总用户数</div><div class="admin-stat-sub">今日新增 +${newToday || 0} · 本周 +${newWeek || 0}</div></div>
+      <div class="admin-stat"><div class="admin-stat-num">${totalQA || 0}</div><div class="admin-stat-lbl">累计 AI 调用</div><div class="admin-stat-sub">今日 ${qaToday || 0} 次</div></div>
+      <div class="admin-stat"><div class="admin-stat-num">${totalCheckins || 0}</div><div class="admin-stat-lbl">累计签到次数</div><div class="admin-stat-sub">平均 ${totalUsers ? (totalCheckins / totalUsers).toFixed(1) : 0} 次/用户</div></div>
+      <div class="admin-stat"><div class="admin-stat-num">${totalCredits}</div><div class="admin-stat-lbl">慧根值余额合计</div><div class="admin-stat-sub">总发放 ${totalEarned} · 总消耗 ${totalSpent}</div></div>
+      <div class="admin-stat"><div class="admin-stat-num">${creditsIn}</div><div class="admin-stat-lbl">慧根值发放总量</div><div class="admin-stat-sub">消耗 ${creditsOut}</div></div>
+      <div class="admin-stat" style="background:var(--lime)"><div class="admin-stat-num" style="color:#000">${totalQA && totalUsers ? (totalQA / totalUsers).toFixed(1) : 0}</div><div class="admin-stat-lbl" style="color:rgba(0,0,0,.5)">人均调用次数</div><div class="admin-stat-sub" style="color:rgba(0,0,0,.35)">参与深度指标</div></div>
+    </div>
+
+    <!-- 时间维度统计 -->
+    <div class="admin-card">
+      <div class="admin-card-head">
+        <div class="admin-card-title">时间维度统计</div>
+        <div style="display:flex;gap:6px">${rbtn(1,'今日')}${rbtn(7,'近7天')}${rbtn(30,'近30天')}</div>
+      </div>
+      <div class="admin-card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
+          ${rstat('新增用户', agg.signups)}${rstat('AI 调用', agg.qa)}${rstat('签到次数', agg.checkins)}${rstat('慧根发放', agg.granted)}${rstat('慧根消耗', agg.spent)}
         </div>
       </div>
+    </div>
 
-      <!-- 7-day activity -->
-      <div class="admin-card">
-        <div class="admin-card-head">
-          <div class="admin-card-title">近7天 AI 调用量</div>
+    <!-- 时间序列图 -->
+    <div class="admin-card">
+      <div class="admin-card-head"><div class="admin-card-title">${rangeLabel} AI 调用量</div></div>
+      <div class="admin-card-body" style="max-height:340px;overflow-y:auto">${barsHTML}</div>
+    </div>
+
+    <!-- 积分空投 -->
+    <div class="admin-card">
+      <div class="admin-card-head"><div class="admin-card-title">积分空投</div><div style="font-size:12px;color:var(--muted)">选择用户 → 输入数量 → 空投</div></div>
+      <div class="admin-card-body">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <input id="airdrop-search" placeholder="搜索邮箱…" oninput="adminFilterUsers(this.value)" style="flex:1;min-width:160px;padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          <button onclick="adminToggleAllUsers()" class="admin-refresh">全选/清空(可见)</button>
+          <input id="airdrop-amount" type="number" min="1" step="1" placeholder="积分数量" style="width:120px;padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+          <button onclick="adminAirdrop()" class="admin-refresh" style="background:#000;color:var(--lime);border-color:#000">🪂 空投</button>
         </div>
-        <div class="admin-card-body">
-          ${Object.entries(dayMap).map(([d, n]) => {
-            const label = d.slice(5);
-            const pct = Math.round(n / maxDay * 100);
-            return `<div class="admin-bar-row">
-              <div class="admin-bar-label">${label}</div>
-              <div class="admin-bar-track"><div class="admin-bar-fill" style="width:${pct}%"></div></div>
-              <div class="admin-bar-val">${n}</div>
-            </div>`;
-          }).join('')}
-        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px"><span id="airdrop-count">已选 0</span> 人 · 可选 ${(allUsers||[]).length} 人</div>
+        <div id="airdrop-userlist" style="max-height:280px;overflow-y:auto;border:1.5px solid var(--border);border-radius:12px">${airdropRows || '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">暂无用户</div>'}</div>
       </div>
+    </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <!-- Feature breakdown -->
@@ -4054,8 +4065,46 @@ async function adminInit() {
         requestAnimationFrame(() => b.style.width = w);
       });
     });
+  adminUpdateSelCount();
+}
+
+// ── 积分空投交互 ──
+function adminUpdateSelCount() {
+  const n = document.querySelectorAll('.airdrop-ck:checked').length;
+  const el = document.getElementById('airdrop-count'); if (el) el.textContent = '已选 ' + n;
+}
+function adminToggleAllUsers() {
+  const rows = [...document.querySelectorAll('#airdrop-userlist .airdrop-row')].filter(r => r.style.display !== 'none');
+  const cks = rows.map(r => r.querySelector('.airdrop-ck'));
+  const allOn = cks.length && cks.every(c => c.checked);
+  cks.forEach(c => { c.checked = !allOn; });
+  adminUpdateSelCount();
+}
+function adminFilterUsers(qstr) {
+  const q = (qstr || '').toLowerCase();
+  document.querySelectorAll('#airdrop-userlist .airdrop-row').forEach(r => {
+    const em = (r.querySelector('.airdrop-ck').dataset.email || '').toLowerCase();
+    r.style.display = em.includes(q) ? '' : 'none';
+  });
+}
+async function adminAirdrop() {
+  const ids = [...document.querySelectorAll('.airdrop-ck:checked')].map(c => c.value);
+  const amount = parseInt(document.getElementById('airdrop-amount').value, 10);
+  if (!ids.length) { showToast('请先勾选要空投的用户'); return; }
+  if (!amount || amount <= 0) { showToast('请输入正确的积分数量'); return; }
+  if (!confirm(`确认给选中的 ${ids.length} 位用户，每人空投 ${amount} 慧根？`)) return;
+  try {
+    const r = await fetch('/api/admin?action=airdrop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_sbToken || ''}` },
+      body: JSON.stringify({ user_ids: ids, amount })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    showToast(`✅ 已给 ${d.granted} 位用户各空投 ${d.amount} 慧根`);
+    adminInit();
   } catch(e) {
-    el.innerHTML = `<div class="admin-loading" style="color:#dc2626">加载失败：${e.message}</div>`;
+    showToast('空投失败：' + e.message);
   }
 }
 </script>
