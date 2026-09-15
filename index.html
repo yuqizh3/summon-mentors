@@ -1272,11 +1272,11 @@ function pmSwitchTab(tab, btnEl) {
 function pmRenderWishesTab() {
   const body = document.getElementById('pm-body');
   body.innerHTML=`<div class="pm-section">
-    <div class="pm-section-title" style="margin-bottom:12px">许愿池</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">说说你想看到的导师、功能或模拟对象，我们会认真看</div>
+    <div class="pm-section-title" style="margin-bottom:12px">辩题广场 · 投稿 & 点赞</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">你最想看谁跟谁吵什么？投稿一个辩题，高赞的会被做成正式圆桌话题</div>
     <div class="feedback-row" style="margin-bottom:16px">
-      <input class="feedback-input" id="pm-wish-input" placeholder="比如：想要鲁迅导师 / 想要职场吵架模式…" />
-      <button class="feedback-submit-btn" onclick="submitWish(document.getElementById('pm-wish-input').value, document.getElementById('pm-wish-input'));pmRenderWishes()">提交</button>
+      <input class="feedback-input" id="pm-wish-input" placeholder="比如：马克思 vs 马斯克 聊该不该躺平" />
+      <button class="feedback-submit-btn" onclick="submitWish(document.getElementById('pm-wish-input').value, document.getElementById('pm-wish-input'))">投稿</button>
     </div>
     <div id="pm-wishes-list"></div>
   </div>`;
@@ -2436,54 +2436,67 @@ ${prevText}
 }
 
 
+// 精选辩题库：每个话题配好推荐导师组合（世界观冲突越大越好看）。点击=自动填题+自动选导师
 const RT_QUESTIONS = {
   money: [
-    '给你1000万，但必须和现在的伴侣永远断绝关系，你要吗？',
-    '给你一个机会，成功概率30%，但失败会归零，你赌不赌？',
-    '如果你年薪50万但工作极度痛苦，你会继续吗？',
-    '你可以保住自己的工作，但代价是同事被裁，你怎么选？',
-    '人一定要很多钱才能过得好吗？',
-    '买房和不买房哪个更幸福？',
-    '高学历女生做全职太太是浪费吗？',
+    { q:'该不该躺平？', m:['marx','nietzsche','mao'] },
+    { q:'35岁被裁，是我的问题还是时代的问题？', m:['marx','stoic','musk'] },
+    { q:'年薪50万但工作极度痛苦，该辞吗？', m:['nietzsche','buddha','heyi'] },
+    { q:'有个创业机会，要不要辞职 all in？', m:['musk','sun','laozi'] },
+    { q:'该不该掏空六个钱包买房？', m:['wanghuilin','marx','stoic'] },
+    { q:'用健康换钱，值得吗？', m:['buddha','michelangelo','trump'] },
+    { q:'考公上岸，还是出去闯一闯？', m:['confucius','musk','caocao'] },
+    { q:'给你1000万，但要和现在的伴侣永远断绝关系，你要吗？', m:['god','ququ','trump'] },
+    { q:'一夜暴富和细水长流，你选哪个？', m:['laozi','trump','heyi'] },
+    { q:'人一定要很有钱才能过得好吗？', m:['buddha','marx','trump'] },
   ],
   moral: [
-    '你可以一夜成名，但必须牺牲一个无辜的人，你会接受吗？',
-    '一列失控的电车即将撞死5个人，你可以拉杆改道撞死1个人，你会不会拉？',
-    '你知道一个朋友即将做错人生决定，但干预会毁掉你们关系，你说不说？',
-    '一个明显有罪的人逃脱了法律，你会不会私下制裁？',
-    '如果你是统治者，可以牺牲少数人换取整体繁荣，你会这么做吗？',
-    '为了社会稳定，可以限制一部分人的自由吗？',
-    '美术馆着火，救猫还是救画？如果不是猫，是仓鼠呢？',
-    '公众场合遇到熊孩子，要不要教育？',
-    '美国应不应该实现民间禁枪？',
-    '自由比安全更重要吗？',
+    { q:'保住工作但代价是同事被裁，你怎么选？', m:['confucius','caocao','marx'] },
+    { q:'失控电车撞向5人，你要不要拉杆改道撞死1人？', m:['god','qinshihuang','stoic'] },
+    { q:'发现好友的另一半出轨，你说不说？', m:['confucius','freud','ququ'] },
+    { q:'善意的谎言，到底该不该说？', m:['kid','confucius','nietzsche'] },
+    { q:'捡到一大笔钱，还不还？', m:['god','caocao','stoic'] },
+    { q:'为了大局牺牲少数人，可以吗？', m:['qinshihuang','mao','god'] },
+    { q:'一个明显有罪的人逃脱了法律，你会私下制裁吗？', m:['caocao','confucius','god'] },
+    { q:'能力和忠诚，你更看重哪个？', m:['caocao','confucius','qinshihuang'] },
+    { q:'为了社会稳定，可以牺牲一部分人的自由吗？', m:['qinshihuang','marx','nietzsche'] },
+    { q:'美术馆着火，救猫还是救名画？', m:['michelangelo','buddha','kid'] },
   ],
   love: [
-    '你发现伴侣出轨，但对方说这是"唯一一次"，你原谅吗？',
-    '你可以让伴侣永远幸福，但她不会再爱你，你会接受吗？',
-    '你女朋友一分彩礼都不要，但她家人强烈反对，你怎么办？',
-    '你父母强烈反对你的人生选择，你会坚持还是妥协？',
-    '如果爱一个人让你变得更差，这段关系该不该继续？',
-    '你愿意被一个完美AI伴侣替代真实关系吗？',
-    '该不该看伴侣的手机？',
-    '现在谈恋爱和结婚到底要不要AA制？',
-    '爱上好朋友的恋人，要不要追求？',
-    '坚持追求真爱是不是理智的行为？',
-    '飞机失事，要不要叫醒旁边睡着的爱人？',
-    '要不要说服父母去养老院？',
+    { q:'该不该跟前任复合？', m:['xuedi','ququ','freud'] },
+    { q:'在一起三年了，要不要结婚？', m:['wanghuilin','confucius','adler'] },
+    { q:'他忽冷忽热，我该主动联系吗？', m:['xuedi','ququ','adler'] },
+    { q:'为了爱情降低择偶标准，值吗？', m:['wanghuilin','ququ','plato'] },
+    { q:'该不该为对方放弃自己的事业或城市？', m:['wanghuilin','marx','adler'] },
+    { q:'爱情里付出多的人，就一定输吗？', m:['ququ','xuedi','adler'] },
+    { q:'发现伴侣出轨，他说"只有这一次"，你原谅吗？', m:['xuedi','god','ququ'] },
+    { q:'恋爱脑到底有没有救？', m:['xuedi','freud','buddha'] },
+    { q:'要不要和不爱但很合适的人在一起？', m:['plato','wanghuilin','ququ'] },
+    { q:'该不该看伴侣的手机？', m:['freud','confucius','ququ'] },
   ],
   self: [
-    '如果可以删除所有痛苦记忆，你还是现在的你吗？',
-    '你更想成为"真实的自己"，还是"更成功的自己"？',
-    '如果你的人格可以被优化，你愿意改变吗？',
-    '人的选择到底是自由的，还是早就被决定好的？',
-    '情绪稳定真的能让生活更幸福吗？',
+    { q:'我该取悦别人，还是取悦自己？', m:['adler','nietzsche','confucius'] },
+    { q:'平庸的一生，算失败吗？', m:['nietzsche','buddha','michelangelo'] },
+    { q:'到底该不该回老家？', m:['wanghuilin','laozi','marx'] },
+    { q:'讨好型人格怎么破？', m:['adler','xuedi','nietzsche'] },
+    { q:'我是不是在浪费自己的天赋？', m:['michelangelo','nietzsche','musk'] },
+    { q:'该活在当下，还是为未来拼命？', m:['dog','buddha','musk'] },
+    { q:'总是焦虑内耗，怎么办？', m:['stoic','buddha','laozi'] },
+    { q:'到底要不要在意别人的看法？', m:['adler','nietzsche','laozi'] },
+    { q:'找不到人生的意义，怎么办？', m:['nietzsche','buddha','god'] },
+    { q:'要不要 gap 一年去流浪？', m:['laozi','confucius','kid'] },
   ],
   ai: [
-    '如果AI比人类更适合做决策，人类应该让权吗？',
-    'AI可以完美管理社会，但人类会失去自由，你接受吗？',
-    '如果AI可以复制你的意识，你还算独一无二吗？',
-    '你愿意被一个完美AI伴侣替代真实关系吗？',
+    { q:'AI 会让普通人更自由，还是更没用？', m:['marx','musk','mao'] },
+    { q:'该不该让 AI 替你做人生决策？', m:['musk','laozi','adler'] },
+    { q:'AI 伴侣能替代真实的亲密关系吗？', m:['freud','buddha','xuedi'] },
+    { q:'如果 AI 能复制你的意识，你还独一无二吗？', m:['jung','plato','kid'] },
+    { q:'AI 时代，还有必要拼命读书吗？', m:['confucius','marx','musk'] },
+    { q:'完美 AI 能管好社会，但你会失去自由，接受吗？', m:['qinshihuang','marx','nietzsche'] },
+    { q:'AI 抢走你的工作，是解放还是灾难？', m:['marx','musk','stoic'] },
+    { q:'该相信算法推荐，还是自己的判断？', m:['sun','laozi','musk'] },
+    { q:'如果能永生，你想永远活着吗？', m:['buddha','nietzsche','god'] },
+    { q:'孩子该从小学 AI，还是先学做人？', m:['confucius','musk','kid'] },
   ],
 };
 
@@ -2496,15 +2509,27 @@ function rtShowCat(cat) {
   });
   const bank = document.getElementById('rt-qbank');
   if (!bank) return;
-  bank.innerHTML = (RT_QUESTIONS[cat] || []).map(q =>
-    `<button class="rt-q-chip" onclick="rtPickQ(this.textContent)">${q}</button>`
+  bank.innerHTML = (RT_QUESTIONS[cat] || []).map((t, i) =>
+    `<button class="rt-q-chip" onclick="rtPickTopic('${cat}',${i})">${t.q}</button>`
   ).join('');
 }
 
-function rtPickQ(q) {
+// 点辩题：自动填问题 + 自动选好推荐导师 + 滚到开始按钮（一键开辩）
+function rtPickTopic(cat, i) {
+  const t = (RT_QUESTIONS[cat] || [])[i];
+  if (!t) return;
   const ta = document.getElementById('rt-question');
-  if (ta) { ta.value = q; ta.focus(); }
+  if (ta) ta.value = t.q;
+  if (Array.isArray(t.m) && t.m.length) {
+    rtPicked = new Set(t.m.filter(id => ADVISORS.some(a => a.id === id)).slice(0, 4));
+    rtRenderAdvisors();
+  }
+  const btn = document.getElementById('rt-go-btn');
+  if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(L('已为你选好导师，点「开始圆桌」开吵 🔥','Mentors picked — hit Start to begin 🔥'));
 }
+// 兼容旧调用
+function rtPickQ(q) { const ta = document.getElementById('rt-question'); if (ta) { ta.value = q; ta.focus(); } }
 function init(){
   renderAdvisors();
 }
@@ -2625,20 +2650,44 @@ function submitFeedback(rating, context, btn) {
   const msgs={good:'谢谢认可 ❤️',mid:'收到，会继续优化',bad:'反馈已记录，会继续改进'};
   showToast(msgs[rating]||'已收到');
 }
-function submitWish(text, inputEl) {
-  if(!currentUser){ openAuth('login'); showToast(L('登录后才能加入许愿池','Please log in to add a wish')); return; }
-  if(!text?.trim()){showToast(L('请输入内容','Please enter something'));return;}
-  const wishes=JSON.parse(localStorage.getItem('ym_wishes')||'[]');
-  wishes.unshift({text:text.trim(), time:new Date().toLocaleString('zh-CN')});
-  localStorage.setItem('ym_wishes', JSON.stringify(wishes.slice(0,200)));
-  if(inputEl)inputEl.value='';
-  showToast('已投入许愿池 ✨');
+// 投稿辩题（存 Supabase 共享表 debate_submissions，供大家点赞）
+async function submitWish(text, inputEl) {
+  if(!currentUser){ openAuth('login'); showToast(L('登录后才能投稿','Please log in to submit')); return; }
+  const t=(text||'').trim();
+  if(!t){ showToast(L('请输入内容','Please enter something')); return; }
+  try {
+    await supaFetch('debate_submissions', { method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify({ text: t.slice(0,120), user_id: currentUser.id }) });
+    if(inputEl) inputEl.value='';
+    showToast(L('已投稿 ✨ 大家可以来点赞','Submitted ✨'));
+    pmRenderWishes();
+  } catch(e){ showToast(L('提交失败，请稍后再试','Failed, please retry')); }
 }
-function pmRenderWishes() {
+async function pmRenderWishes() {
   const el=document.getElementById('pm-wishes-list'); if(!el) return;
-  const wishes=JSON.parse(localStorage.getItem('ym_wishes')||'[]');
-  if(!wishes.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">还没有许愿，说说你想看到什么？</div>';return;}
-  el.innerHTML=wishes.map(w=>`<div class="wish-item">${w.text}<span class="wish-time">${w.time}</span></div>`).join('');
+  el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">'+L('加载中…','Loading…')+'</div>';
+  let rows=[];
+  try { rows = await supaFetch('debate_submissions?select=id,text,votes,created_at&order=votes.desc,created_at.desc&limit=50') || []; } catch(e){}
+  if(!rows.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">'+L('还没有投稿，来提第一个想看的辩题吧？','No submissions yet — be the first!')+'</div>'; return; }
+  const voted = JSON.parse(localStorage.getItem('ym_voted')||'[]');
+  el.innerHTML = rows.map(w=>{
+    const on = voted.includes(w.id);
+    return `<div class="wish-item" style="display:flex;align-items:center;gap:10px">
+      <span style="flex:1;line-height:1.5">${pmEsc(w.text)}</span>
+      <button class="pm-mini-btn${on?' dark':''}" onclick="voteWish('${w.id}',this)"${on?' disabled':''} style="white-space:nowrap;flex-shrink:0">👍 <span>${w.votes||0}</span></button>
+    </div>`;
+  }).join('');
+}
+// 给辩题点赞（RPC 原子 +1，localStorage 去重）
+async function voteWish(id, btn) {
+  if(!currentUser){ openAuth('login'); showToast(L('登录后才能点赞','Please log in to vote')); return; }
+  let voted = JSON.parse(localStorage.getItem('ym_voted')||'[]');
+  if(voted.includes(id)){ showToast(L('你已经点过赞了','Already voted')); return; }
+  try {
+    await supaFetch('rpc/bump_topic_vote', { method:'POST', body: JSON.stringify({ sid: id }) });
+    voted.push(id); localStorage.setItem('ym_voted', JSON.stringify(voted.slice(-500)));
+    if(btn){ const c=btn.querySelector('span'); if(c) c.textContent=(parseInt(c.textContent,10)||0)+1; btn.classList.add('dark'); btn.disabled=true; }
+    showToast(L('已点赞 👍','Voted 👍'));
+  } catch(e){ showToast(L('点赞失败，请稍后再试','Vote failed, retry')); }
 }
 
 // ── 创建反馈小组件 HTML ──
@@ -2733,25 +2782,48 @@ function rtCloseSummary() {
 
 async function rtShareSummary() {
   const modal = document.getElementById('rt-summary-modal');
-  const summary = modal._summary || '';
-  const question = modal._question || '';
+  const question = modal._question || (document.getElementById('rt-question')?.value || '').trim();
+  const arena = document.getElementById('rt-arena');
   const card = document.getElementById('rt-share-card');
 
-  // Build share card
+  // 每位导师取其"亮相"那句（首次出现），做成对战金句
+  const seen = {}; const lineup = [];
+  (arena ? arena.querySelectorAll('.rt-card') : []).forEach(c => {
+    const name = c.querySelector('.rt-card-name')?.textContent?.trim();
+    let text = (c.querySelector('.rt-card-text')?.textContent || '').trim();
+    if (name && text && !seen[name]) {
+      seen[name] = 1;
+      const adv = ADVISORS.find(a => advName(a) === name || a.name === name);
+      if (text.length > 48) text = text.slice(0, 48) + '…';
+      lineup.push({ name, glyph: adv ? (GLYPHS[adv.id] || '') : '', quote: text });
+    }
+  });
+  const vsLine = lineup.map(m => m.name).join('  ✕  ');
+
   card.style.display = 'block';
+  card.style.width = '480px';
   card.innerHTML = `
-    <div style="background:#000;color:var(--lime);padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase">导师圆桌派 · 精华卡片</div>
-    <div style="padding:24px 28px;background:#fff">
-      <div style="font-size:13px;color:rgba(0,0,0,.4);margin-bottom:6px">话题</div>
-      <div style="font-size:17px;font-weight:700;color:#000;margin-bottom:20px;line-height:1.5">${question}</div>
-      <pre style="white-space:pre-wrap;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.85;color:#000;margin:0">${summary}</pre>
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(0,0,0,.1);font-size:11px;color:rgba(0,0,0,.3);font-weight:600;letter-spacing:.06em">人生导师召唤术</div>
+    <div style="background:#0a0a0a;padding:26px 28px 20px">
+      <div style="color:#BFFF00;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px">导师圆桌派 · BATTLE 🔥</div>
+      <div style="color:#fff;font-size:23px;font-weight:800;line-height:1.35">${question || '一场圆桌辩论'}</div>
+      <div style="color:rgba(255,255,255,.5);font-size:12px;font-weight:700;margin-top:12px;letter-spacing:.02em">${vsLine}</div>
+    </div>
+    <div style="background:#BFFF00;padding:6px 28px 22px">
+      ${lineup.map(m => `
+        <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid rgba(0,0,0,.14)">
+          <div style="width:36px;height:36px;flex-shrink:0;border:1.5px solid #000;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.05)">${m.glyph}</div>
+          <div><div style="font-size:13px;font-weight:800;color:#000;margin-bottom:3px">${m.name}</div><div style="font-size:13.5px;color:#0a0a0a;line-height:1.5">"${m.quote}"</div></div>
+        </div>`).join('')}
+      <div style="margin-top:18px;text-align:center">
+        <div style="font-size:15px;font-weight:800;color:#000">你的两难，值得一场圆桌</div>
+        <div style="font-size:12px;color:rgba(0,0,0,.55);margin-top:3px;font-weight:600;letter-spacing:.04em">polyminds.chat · 人生导师召唤术</div>
+      </div>
     </div>
   `;
+  // glyph SVG 需要显式描边才能在导出图里显示
+  card.querySelectorAll('svg').forEach(s => { s.style.fill = 'none'; s.style.stroke = '#000'; s.style.strokeWidth = '1.7'; s.setAttribute('width', '21'); s.setAttribute('height', '21'); });
 
-  // Use html2canvas to generate image
   if (typeof html2canvas === 'undefined') {
-    // Load html2canvas dynamically
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
@@ -2761,28 +2833,23 @@ async function rtShareSummary() {
   }
 
   const shareBtn = document.getElementById('rt-summary-share');
-  shareBtn.textContent = '生成中…';
+  const orig = L('🔥 生成对战海报', '🔥 Battle poster');
+  shareBtn.textContent = L('生成中…', 'Generating…');
   shareBtn.disabled = true;
-
   try {
-    const canvas = await html2canvas(card, {
-      scale: 2, backgroundColor: '#fff',
-      width: 480, useCORS: true
-    });
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#0a0a0a', width: 480, useCORS: true });
     card.style.display = 'none';
-
-    // Download image
     const link = document.createElement('a');
-    link.download = '导师圆桌派精华.png';
+    link.download = '导师圆桌派-对战海报.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
-    shareBtn.textContent = '已下载 ✓';
-    setTimeout(() => { shareBtn.textContent = '生成图片下载'; shareBtn.disabled = false; }, 2000);
+    shareBtn.textContent = L('已下载 ✓ 去发小红书', 'Saved ✓');
+    setTimeout(() => { shareBtn.textContent = orig; shareBtn.disabled = false; }, 2500);
   } catch(e) {
     card.style.display = 'none';
-    shareBtn.textContent = '生成图片下载';
+    shareBtn.textContent = orig;
     shareBtn.disabled = false;
-    alert('生成图片失败，请截图保存');
+    alert(L('生成图片失败，请截图保存', 'Failed — please screenshot instead'));
   }
 }
 
@@ -3531,7 +3598,7 @@ async function cfEndConflict(){
     </div>
     <div id="rt-summary-body" style="padding:24px"></div>
     <div style="padding:16px 24px;border-top:1.5px solid rgba(0,0,0,.08)">
-      <button id="rt-summary-share" onclick="rtShareSummary()" style="display:none;width:100%;padding:14px;background:#000;color:var(--lime);border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">生成图片下载 📸</button>
+      <button id="rt-summary-share" onclick="rtShareSummary()" style="display:none;width:100%;padding:14px;background:#000;color:var(--lime);border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif" data-zh="🔥 生成对战海报" data-en="🔥 Battle poster">🔥 生成对战海报</button>
     </div>
   </div>
 </div>
@@ -3862,7 +3929,7 @@ async function cfEndConflict(){
       <button class="pm-tab active" onclick="pmSwitchTab('credits',this)">✦ 慧根值</button>
       <button class="pm-tab" onclick="pmSwitchTab('history',this)">决策轨迹</button>
       <button class="pm-tab" onclick="pmSwitchTab('favorites',this)">我的收藏</button>
-      <button class="pm-tab" onclick="pmSwitchTab('wishes',this)">许愿池 ✨</button>
+      <button class="pm-tab" onclick="pmSwitchTab('wishes',this)">辩题广场 🔥</button>
     </div>
     <!-- Body -->
     <div class="pm-body" id="pm-body">
