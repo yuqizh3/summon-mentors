@@ -8,8 +8,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
-  // WorldRouter：OpenAI 兼容端点。可用环境变量 ANTHROPIC_BASE_URL 覆盖（要带 /v1）。
-  const baseUrl = process.env.ANTHROPIC_BASE_URL || 'https://inference-api.worldrouter.ai/v1';
+  // WorldRouter：OpenAI 兼容端点。base 用 host 即可，/v1 在下面拼。
+  // 容错：无论环境变量带不带 /v1、带不带结尾斜杠，都会拼成 .../v1/chat/completions。
+  let baseUrl = process.env.ANTHROPIC_BASE_URL || 'https://inference-api.worldrouter.ai';
+  baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/v1$/, '');
 
   try {
     const { model, max_tokens, system, messages } = req.body;
@@ -24,7 +26,7 @@ export default async function handler(req, res) {
       oaMessages.push({ role: m.role || 'user', content: String(content == null ? '' : content) });
     });
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
